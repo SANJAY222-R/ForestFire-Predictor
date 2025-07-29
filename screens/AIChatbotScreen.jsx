@@ -16,6 +16,8 @@ import { useHeaderHeight } from "@react-navigation/elements";
 
 import { ThemeContext } from "../theme/ThemeContext";
 import { typography } from "../theme/typography";
+//import Config from "react-native-config";
+// import { GEMINI_API_KEY } from "../expo-env";
 
 const AIChatbotScreen = () => {
   const { colors } = useContext(ThemeContext);
