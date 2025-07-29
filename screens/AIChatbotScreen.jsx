@@ -56,7 +56,8 @@ const AIChatbotScreen = () => {
     setIsTyping(true);
 
     try {
-      const prompt = `You are a helpful fire safety assistant. Respond to the user's query: "${inputText}". Provide a concise and clear answer. Use markdown for formatting, like bolding key terms and using bullet points (e.g., "* Point 1"). Keep the response helpful and focused on fire safety.`;
+      const prompt = `You are a helpful fire safety assistant. Respond to the user's query: "${inputText}". Provide a concise and clear answer in four points. Use markdown for formatting, like bolding key terms and using bullet points (e.g., "* Point 1"). Keep the response helpful and focused on fire safety.`;
+
       const payload = {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
       };
@@ -64,7 +65,7 @@ const AIChatbotScreen = () => {
       const apiKey = "AIzaSyB-o-0rZ1S3dcjuun-KuQWKWMSyo7LwE38";
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -137,7 +138,7 @@ const AIChatbotScreen = () => {
           ))}
           {isTyping && <TypingIndicator colors={colors} />}
         </ScrollView>
-
+        <QuickActions setInputText={setInputText} />
         <View
           style={[
             styles.inputContainer,
@@ -182,7 +183,44 @@ const AIChatbotScreen = () => {
   );
 };
 
-// Sub-components
+const QuickActions = ({ setInputText }) => {
+  const { colors } = useContext(ThemeContext);
+
+  const actions = [
+    { text: "🔥 High Smoke", msg: "What does high smoke level mean?" },
+    { text: "🚨 Evacuation", msg: "When should I evacuate?" },
+    { text: "🛡️ Safety Tips", msg: "Fire safety tips" },
+    { text: "📡 Sensors", msg: "How do fire sensors work?" },
+  ];
+
+  return (
+    <View style={[styles.quickActions, { borderTopColor: colors.border }]}>
+      <Text style={[styles.quickActionsTitle, { color: colors.textSecondary }]}>
+        Quick Questions:
+      </Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        {actions.map((btn, idx) => (
+          <TouchableOpacity
+            key={idx}
+            style={[
+              styles.quickButton,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
+            ]}
+            onPress={() => setInputText(btn.msg)}
+          >
+            <Text style={[styles.quickButtonText, { color: colors.text }]}>
+              {btn.text}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+};
+
 const MessageBubble = ({ message, colors }) => {
   useEffect(() => {
     const animation = Animated.timing(message.fadeAnim, {
@@ -221,7 +259,9 @@ const MessageBubble = ({ message, colors }) => {
             message.isUser ? { color: "white" } : { color: colors.text },
           ]}
         >
-          {message.text}
+          {message.isUser
+            ? message.text
+            : renderFormattedText(message.text, colors.text)}
         </Text>
         <Text
           style={[
@@ -245,7 +285,7 @@ const TypingIndicator = ({ colors }) => (
     </View>
     <View style={[styles.typingContainer, { backgroundColor: colors.surface }]}>
       <Text style={[styles.typingText, { color: colors.textSecondary }]}>
-        AI is typing
+        AI is thinking...
       </Text>
       <View style={styles.typingDots}>
         <View style={[styles.dot, { backgroundColor: colors.textLight }]} />
@@ -256,7 +296,80 @@ const TypingIndicator = ({ colors }) => (
   </View>
 );
 
+const renderFormattedText = (text, color) => {
+  const lines = text.split(/\n+/);
+
+  return (
+    <View>
+      {lines.map((line, index) => {
+        if (/^\s*[\*\-]\s+/.test(line)) {
+          const content = line.replace(/^\s*[\*\-]\s+/, "");
+          const parts = content.split(/(\*\*.*?\*\*)/g);
+
+          return (
+            <View key={index} style={{ flexDirection: "row", marginBottom: 4 }}>
+              <Text style={{ color, marginRight: 6 }}>•</Text>
+              <Text style={{ flex: 1, color }}>
+                {parts.map((part, i) => {
+                  const isBold = /^\*\*(.*?)\*\*$/.test(part);
+                  return (
+                    <Text
+                      key={i}
+                      style={isBold ? { fontWeight: "bold", color } : { color }}
+                    >
+                      {part.replace(/\*\*/g, "")}
+                    </Text>
+                  );
+                })}
+              </Text>
+            </View>
+          );
+        }
+
+        const parts = line.split(/(\*\*.*?\*\*)/g);
+        return (
+          <Text key={index} style={{ marginBottom: 4, color }}>
+            {parts.map((part, i) => {
+              const isBold = /^\*\*(.*?)\*\*$/.test(part);
+              return (
+                <Text
+                  key={i}
+                  style={isBold ? { fontWeight: "bold", color } : { color }}
+                >
+                  {part.replace(/\*\*/g, "")}
+                </Text>
+              );
+            })}
+          </Text>
+        );
+      })}
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
+  quickActions: {
+    paddingTop: 8,
+    paddingBottom: 6,
+    borderTopWidth: 1,
+    paddingHorizontal: 16,
+  },
+  quickActionsTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 6,
+  },
+  quickButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginRight: 10,
+  },
+  quickButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
   messagesContainer: {
     flexGrow: 1,
     justifyContent: "flex-end",
