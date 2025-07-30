@@ -1,9 +1,6 @@
 import React, { useContext } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { createDrawerNavigator } from "@react-navigation/drawer";
-import { Ionicons } from "@expo/vector-icons";
 import { ThemeContext } from "../theme/ThemeContext";
-import { typography } from "../theme/typography";
 
 // Import screens
 import HomeScreen from "../screens/HomeScreen";
@@ -27,19 +24,23 @@ export default function DrawerNavigator() {
       screenOptions={{
         headerStyle: {
           backgroundColor: colors.primary,
+          elevation: 0,
+          shadowOpacity: 0,
         },
         headerTintColor: colors.surface,
         headerTitleStyle: {
-          fontWeight: "bold",
+          fontWeight: "600",
+          fontSize: 18,
         },
         drawerStyle: {
           backgroundColor: colors.background,
-          width: 280,
+          width: 320,
         },
-        // These options are for the default drawer content, not our custom one.
-        // The logic is now handled inside CustomDrawerContent.
-        drawerActiveTintColor: colors.primary,
-        drawerInactiveTintColor: colors.textSecondary,
+        drawerType: 'front',
+        overlayColor: 'rgba(0, 0, 0, 0.5)',
+        sceneContainerStyle: {
+          backgroundColor: colors.background,
+        },
       }}
     >
       <Drawer.Screen
@@ -47,6 +48,7 @@ export default function DrawerNavigator() {
         component={HomeScreen}
         options={{
           title: "Dashboard",
+          headerShown: true,
         }}
       />
       <Drawer.Screen
@@ -54,6 +56,7 @@ export default function DrawerNavigator() {
         component={PredictionInputScreen}
         options={{
           title: "Fire Risk Prediction",
+          headerShown: true,
         }}
       />
       <Drawer.Screen
@@ -61,6 +64,7 @@ export default function DrawerNavigator() {
         component={ResultsScreen}
         options={{
           title: "Prediction History",
+          headerShown: true,
         }}
       />
       <Drawer.Screen
@@ -68,6 +72,7 @@ export default function DrawerNavigator() {
         component={AIChatbotScreen}
         options={{
           title: "AI Assistant",
+          headerShown: true,
         }}
       />
       <Drawer.Screen
@@ -75,6 +80,7 @@ export default function DrawerNavigator() {
         component={ProfileScreen}
         options={{
           title: "Profile",
+          headerShown: true,
         }}
       />
       <Drawer.Screen
@@ -82,65 +88,23 @@ export default function DrawerNavigator() {
         component={SettingsScreen}
         options={{
           title: "Settings",
+          headerShown: true,
         }}
       />
-      <Drawer.Screen name="Login" component={LoginScreen} />
-      <Drawer.Screen name="Signup" component={SignupScreen} />
+      <Drawer.Screen 
+        name="Login" 
+        component={LoginScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Drawer.Screen 
+        name="Signup" 
+        component={SignupScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
     </Drawer.Navigator>
   );
-};
-
-const styles = StyleSheet.create({
-  drawerContainer: {
-    flex: 1,
-  },
-  drawerHeader: {
-    padding: 20,
-    paddingTop: 60,
-    alignItems: "center",
-  },
-  logoContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  appTitle: {
-    ...typography.h3,
-    textAlign: "center",
-  },
-  appSubtitle: {
-    ...typography.caption,
-    textAlign: "center",
-    marginTop: 4,
-  },
-  menuContainer: {
-    flex: 1,
-    paddingTop: 10,
-    paddingHorizontal: 12,
-  },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 15,
-    borderRadius: 8,
-  },
-  menuText: {
-    ...typography.body1,
-    marginLeft: 20, // Increased margin for better spacing
-  },
-  selectedMenuText: {
-    fontWeight: "bold",
-  },
-  drawerFooter: {
-    padding: 20,
-    borderTopWidth: 1,
-  },
-  footerText: {
-    ...typography.caption,
-    textAlign: "center",
-  },
-});
+}
