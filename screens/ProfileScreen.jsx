@@ -1,22 +1,190 @@
-import React, { useContext } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useContext, useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@clerk/clerk-expo';
 import { ThemeContext } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
 
 const ProfileScreen = () => {
   const { colors } = useContext(ThemeContext);
-  
-  // Mock user data
-  const userData = {
-    name: 'John Wick',
-    email: 'Babayaga@assassian.com',
-    avatar: null, // Using default avatar
-    joinDate: 'January 2024',
-    totalPredictions: 21,
-    highRiskAlerts: 3,
-    lastActive: '2 hours ago',
+  const { user, signOut, isLoaded, isSignedIn } = useAuth();
+  const [userData, setUserData] = useState({
+    name: 'Loading...',
+    email: 'Loading...',
+    avatar: null,
+    joinDate: 'Loading...',
+    totalPredictions: 0,
+    highRiskAlerts: 0,
+    lastActive: 'Just now',
+  });
+
+  useEffect(() => {
+    console.log('ProfileScreen useEffect triggered');
+    console.log('isLoaded:', isLoaded);
+    console.log('isSignedIn:', isSignedIn);
+    console.log('user:', user);
+    console.log('user type:', typeof user);
+    
+    // Test direct access to user properties
+    if (user) {
+      console.log('Testing direct user property access:');
+      console.log('user.firstName:', user.firstName);
+      console.log('user.lastName:', user.lastName);
+      console.log('user.emailAddresses:', user.emailAddresses);
+      console.log('user.primaryEmailAddress:', user.primaryEmailAddress);
+      console.log('user.username:', user.username);
+      console.log('user.fullName:', user.fullName);
+      console.log('user.id:', user.id);
+      
+      // Try to access all possible user properties
+      console.log('All user properties:', Object.keys(user));
+      console.log('User object stringified:', JSON.stringify(user, null, 2));
+    }
+    
+    // Add a small delay to wait for user data to load
+    const timer = setTimeout(() => {
+      if (user && isLoaded && isSignedIn) {
+        console.log('Clerk User Data:', {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          emailAddresses: user.emailAddresses,
+          imageUrl: user.imageUrl,
+          createdAt: user.createdAt,
+          id: user.id,
+          username: user.username,
+          fullName: user.fullName,
+          primaryEmailAddress: user.primaryEmailAddress
+        });
+
+        // Extract user data from Clerk with better fallbacks
+        let fullName = '';
+        let primaryEmail = '';
+
+        // Try to get the full name from various possible sources
+        if (user.fullName) {
+          fullName = user.fullName;
+        } else if (user.firstName && user.lastName) {
+          fullName = `${user.firstName} ${user.lastName}`;
+        } else if (user.firstName) {
+          fullName = user.firstName;
+        } else if (user.lastName) {
+          fullName = user.lastName;
+        } else if (user.username) {
+          fullName = user.username;
+        } else if (user.givenName && user.familyName) {
+          fullName = `${user.givenName} ${user.familyName}`;
+        } else if (user.givenName) {
+          fullName = user.givenName;
+        } else if (user.familyName) {
+          fullName = user.familyName;
+        }
+
+        // Get email from various possible sources
+        if (user.emailAddresses && user.emailAddresses.length > 0) {
+          // Try to find a verified email first
+          const verifiedEmail = user.emailAddresses.find(email => 
+            email.verification?.status === 'verified'
+          );
+          if (verifiedEmail) {
+            primaryEmail = verifiedEmail.emailAddress;
+          } else {
+            // Use the first available email
+            primaryEmail = user.emailAddresses[0].emailAddress;
+          }
+        } else if (user.primaryEmailAddress) {
+          primaryEmail = user.primaryEmailAddress.emailAddress;
+        } else if (user.emailAddress) {
+          primaryEmail = user.emailAddress;
+        }
+
+        // Only update user data if we have valid information
+        if (fullName && primaryEmail) {
+          const createdAt = user.createdAt ? new Date(user.createdAt) : new Date();
+          const joinDate = createdAt.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long' 
+          });
+
+          const updatedUserData = {
+            name: fullName,
+            email: primaryEmail,
+            avatar: user.imageUrl || null,
+            joinDate: joinDate,
+            totalPredictions: 0, // This would come from your backend
+            highRiskAlerts: 0, // This would come from your backend
+            lastActive: 'Just now',
+          };
+
+          console.log('Processed User Data:', updatedUserData);
+          setUserData(updatedUserData);
+        } else {
+          console.log('User data incomplete - missing name or email');
+          setUserData({
+            name: 'User data incomplete',
+            email: 'Email not available',
+            avatar: null,
+            joinDate: 'Not available',
+            totalPredictions: 0,
+            highRiskAlerts: 0,
+            lastActive: 'Not available',
+          });
+        }
+      } else if (!isLoaded) {
+        console.log('Clerk is still loading...');
+        setUserData({
+          name: 'Loading...',
+          email: 'Loading...',
+          avatar: null,
+          joinDate: 'Loading...',
+          totalPredictions: 0,
+          highRiskAlerts: 0,
+          lastActive: 'Loading...',
+        });
+      } else if (!isSignedIn) {
+        console.log('User is not signed in');
+        setUserData({
+          name: 'Not signed in',
+          email: 'Not available',
+          avatar: null,
+          joinDate: 'Not available',
+          totalPredictions: 0,
+          highRiskAlerts: 0,
+          lastActive: 'Not available',
+        });
+      } else {
+        console.log('User is signed in but user object is null/undefined');
+        setUserData({
+          name: 'User data not available',
+          email: 'Not available',
+          avatar: null,
+          joinDate: 'Not available',
+          totalPredictions: 0,
+          highRiskAlerts: 0,
+          lastActive: 'Not available',
+        });
+      }
+    }, 1000); // Wait 1 second for user data to load
+
+    return () => clearTimeout(timer);
+  }, [user, isLoaded, isSignedIn]);
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: () => signOut(),
+        },
+      ]
+    );
   };
 
   const ProfileButton = ({ icon, title, onPress, color = colors.primary }) => (
@@ -69,7 +237,7 @@ const ProfileScreen = () => {
                 style={[
                   styles.defaultAvatar, 
                   { 
-                    backgroundColor: colors.background,
+                    backgroundColor: colors.primary + '20',
                     borderColor: colors.primary
                   }
                 ]}
@@ -135,31 +303,31 @@ const ProfileScreen = () => {
           <ProfileButton
             icon="create-outline"
             title="Edit Profile"
-            onPress={() => console.log('Edit Profile')}
+            onPress={() => Alert.alert('Edit Profile', 'Profile editing coming soon!')}
           />
           
           <ProfileButton
             icon="notifications-outline"
             title="Notification Settings"
-            onPress={() => console.log('Notifications')}
+            onPress={() => Alert.alert('Notifications', 'Notification settings coming soon!')}
           />
           
           <ProfileButton
             icon="shield-checkmark-outline"
             title="Privacy & Security"
-            onPress={() => console.log('Privacy')}
+            onPress={() => Alert.alert('Privacy', 'Privacy settings coming soon!')}
           />
           
           <ProfileButton
             icon="help-circle-outline"
             title="Help & Support"
-            onPress={() => console.log('Help')}
+            onPress={() => Alert.alert('Help', 'Help & Support coming soon!')}
           />
           
           <ProfileButton
             icon="information-circle-outline"
             title="About App"
-            onPress={() => console.log('About')}
+            onPress={() => Alert.alert('About', 'Forest Fire Predictor v1.0.0\nAI-Powered Fire Risk Assessment')}
           />
         </View>
 
@@ -173,9 +341,10 @@ const ProfileScreen = () => {
                 borderColor: colors.highRisk + '30'
               }
             ]}
+            onPress={handleLogout}
           >
             <Ionicons name="log-out-outline" size={20} color={colors.highRisk} />
-            <Text style={[styles.logoutText, { color: colors.highRisk }]}>🚪 Logout</Text>
+            <Text style={[styles.logoutText, { color: colors.highRisk }]}>🚪 Sign Out</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

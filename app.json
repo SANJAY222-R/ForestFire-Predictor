@@ -39,6 +39,10 @@
     "experiments": {
       "typedRoutes": true
     },
-    "displayName": "Forest Fire Predictor"
+    "displayName": "Forest Fire Predictor",
+    "extra": {
+      "GEMINI_API_KEY": "AIzaSyD-9tSrQWAB_83xaiKU2OkGmTjTz6xNT10"
+
+    }
   }
 }

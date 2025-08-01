@@ -18,6 +18,7 @@ import { ThemeContext } from "../theme/ThemeContext";
 import { typography } from "../theme/typography";
 //import Config from "react-native-config";
 // import { GEMINI_API_KEY } from "@env";
+// import Constants from "expo-constants";
 
 const AIChatbotScreen = () => {
   const { colors } = useContext(ThemeContext);
@@ -64,7 +65,7 @@ const AIChatbotScreen = () => {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
       };
 
-      const apiKey = "AIzaSyB-o-0rZ1S3dcjuun-KuQWKWMSyo7LwE38";
+      const apiKey = "AIzaSyB-o-0rZ1S3dcjuun-KuQWKWMSyo7LwE38" //Constants.expoConfig.extra.GEMINI_API_KEY;
 
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
