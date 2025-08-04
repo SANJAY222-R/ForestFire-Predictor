@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
@@ -39,10 +38,6 @@
     "experiments": {
       "typedRoutes": true
     },
-    "displayName": "Forest Fire Predictor",
-    "extra": {
-      "GEMINI_API_KEY": "AIzaSyD-9tSrQWAB_83xaiKU2OkGmTjTz6xNT10"
-
-    }
+    "displayName": "Forest Fire Predictor"
   }
 }

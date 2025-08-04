@@ -1,10 +1,10 @@
 import React, { useContext } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemeContext } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
 
-const AlertCard = ({ alert }) => {
+const AlertCard = ({ alert, onPress = null }) => {
   const { colors } = useContext(ThemeContext);
 
   const getAlertIcon = (type) => {
@@ -36,7 +36,7 @@ const AlertCard = ({ alert }) => {
     }
   };
 
-  return (
+  const CardContent = () => (
     <View style={[styles.card, { backgroundColor: colors.surface, shadowColor: colors.shadow }]}>
       <View style={styles.header}>
         <View style={[styles.iconContainer, { backgroundColor: getAlertColor(alert.type) + '20' }]}>
@@ -50,14 +50,31 @@ const AlertCard = ({ alert }) => {
           <Text style={[styles.title, { color: colors.text }]}>{alert.title}</Text>
           <Text style={[styles.time, { color: colors.textLight }]}>{alert.time}</Text>
         </View>
-        <View style={[styles.typeBadge, { backgroundColor: getAlertColor(alert.type) }]}>
-          <Text style={[styles.typeText, { color: colors.surface }]}>{getTypeLabel(alert.type)}</Text>
+        <View style={styles.badgeContainer}>
+          <View style={[styles.typeBadge, { backgroundColor: getAlertColor(alert.type) }]}>
+            <Text style={[styles.typeText, { color: colors.surface }]}>{getTypeLabel(alert.type)}</Text>
+          </View>
+          {!alert.is_read && (
+            <View style={[styles.unreadBadge, { backgroundColor: colors.primary }]}>
+              <Ionicons name="ellipse" size={8} color={colors.surface} />
+            </View>
+          )}
         </View>
       </View>
       
       <Text style={[styles.message, { color: colors.textSecondary }]}>{alert.message}</Text>
     </View>
   );
+
+  if (onPress) {
+    return (
+      <TouchableOpacity onPress={() => onPress(alert)} activeOpacity={0.7}>
+        <CardContent />
+      </TouchableOpacity>
+    );
+  }
+
+  return <CardContent />;
 };
 
 const styles = StyleSheet.create({
@@ -98,6 +115,11 @@ const styles = StyleSheet.create({
     ...typography.caption,
     marginTop: 2,
   },
+  badgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   typeBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -107,6 +129,13 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontWeight: '600',
     fontSize: 10,
+  },
+  unreadBadge: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   message: {
     ...typography.body2,
