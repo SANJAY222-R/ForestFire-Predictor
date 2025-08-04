@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '@clerk/clerk-expo';
 import { ThemeContext } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
 import SensorCard from '../components/SensorCard';
@@ -16,12 +17,25 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import NetworkStatus from '../components/NetworkStatus';
 import { useDashboardData, useAcknowledgeAlert } from '../hooks/useApi';
+import { useUserSync } from '../hooks/useUserSync';
 import { SENSOR_TYPES, ALERT_TYPES } from '../utils/constants';
 
 const HomeScreen = () => {
   const { colors } = useContext(ThemeContext);
+  const { user, isLoaded, isSignedIn } = useAuth();
   const { data, loading, error, refetch } = useDashboardData();
   const { acknowledgeAlert } = useAcknowledgeAlert();
+  const { syncUser } = useUserSync();
+
+  // Auto-sync user when they first access the app
+  useEffect(() => {
+    if (user && isLoaded && isSignedIn) {
+      console.log('Auto-syncing user on app access...');
+      syncUser().catch(err => {
+        console.error('Auto-sync failed on app access:', err);
+      });
+    }
+  }, [user, isLoaded, isSignedIn, syncUser]);
 
   const onRefresh = React.useCallback(() => {
     refetch();

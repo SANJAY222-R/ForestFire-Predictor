@@ -98,6 +98,67 @@ A comprehensive React Native application for predicting forest fire risks using 
 
 ## 🛠️ Development
 
+### Recent Updates
+
+#### User Authentication Fix (Latest)
+- **Issue**: The application was storing random/incorrect user data because it was extracting from Clerk's user object instead of using the actual user input
+- **Root Cause**: Clerk's user object might not contain the exact username/email that the user entered during signup
+- **Solution**: Capture the actual user input during signup and send it to the backend immediately after verification
+- **User Data Flow**: 
+  - Users provide: **username**, **email**, **password** during signup
+  - Frontend captures: **username**, **email** from user input
+  - Frontend sends: **username**, **email**, **display name** to backend
+  - Backend stores: **clerk_user_id**, **email**, **full_name** in database
+  - Profile screen displays: **actual username** and **email** from backend data
+- **Existing Users Fix**: 
+  - Existing users get their data updated when they log in
+  - AuthGate automatically syncs and updates user data on login
+  - Backend compares and updates with latest data from Clerk
+- **Database-First Display Fix**:
+  - Profile screen now gets data **directly from Neon database**
+  - No more dependency on Clerk data for display
+  - Real-time display of actual user data from database
+  - Works for all users (new and existing)
+- **Correct User Identification Fix**:
+  - Backend now identifies the correct user based on authentication token
+  - Development mode uses token decoding to find the right user
+  - Profile screen shows the actual logged-in user's data
+  - No more showing development user data for all users
+- **Changes Made**:
+  - Modified `SignupScreen.jsx` to capture and pass actual user input to sync
+  - Updated `useUserSync.js` to accept and prioritize actual user input over Clerk data
+  - Enhanced `auth.py` backend endpoint to use real user data and update existing users
+  - **Updated `ProfileScreen.jsx` to use ONLY backend data (no Clerk data)**
+  - **Modified `users.py` backend endpoint to return actual database data**
+  - **Enhanced authentication decorator to identify correct user from token**
+  - Updated `User.to_dict()` to include username field
+  - Enhanced `AuthGate.jsx` to ensure existing users get updated on login
+  - Added detailed logging to track actual user input flow
+  - Created test endpoints for debugging user storage
+
+**Files Modified**:
+- `hooks/useUserSync.js` - Extract real user data from Clerk
+- `services/api.js` - Send user data with sync request
+- `backend/app/routes/auth.py` - Use real user data for database storage
+- `test_user_sync.js` - Test script to verify the fix
+
+### Testing User Sync
+
+To test that real user data is being stored correctly:
+
+1. **Start the backend server**
+2. **Run the test script**:
+   ```bash
+   node test_user_sync.js
+   ```
+3. **Check the backend logs** for detailed user data flow
+4. **Use the API endpoint** to list users:
+   ```bash
+   curl http://localhost:5000/api/auth/list-users
+   ```
+
+### Database Schema
+
 ### Backend Structure
 ```
 backend/

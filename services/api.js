@@ -175,13 +175,37 @@ class ApiService {
     return this.post('/auth/verify', { token });
   }
 
+  async syncUser(token, userData = {}) {
+    console.log('🌐 API Service: Calling sync endpoint...');
+    console.log('📤 Request payload:', { 
+      token: token.substring(0, 50) + '...',
+      userData: userData
+    });
+    
+    try {
+      const result = await this.post('/auth/sync', { token, userData });
+      console.log('✅ API Service: Sync successful');
+      console.log('📊 API Service: Response:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ API Service: Sync failed');
+      console.error('❌ API Service: Error details:', error);
+      throw error;
+    }
+  }
+
   async getCurrentUser() {
     return this.get('/auth/user');
   }
 
+  async listUsers() {
+    return this.get('/auth/list-users');
+  }
+
   // User endpoints
   async getUserProfile() {
-    return this.get('/users/profile');
+    const response = await this.get('/users/profile');
+    return response.user || response;
   }
 
   async updateUserProfile(data) {
