@@ -16,6 +16,7 @@ import AlertCard from '../components/AlertCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 
+
 import { useDashboardData, useAcknowledgeAlert } from '../hooks/useApi';
 import { useUserSync } from '../hooks/useUserSync';
 import { SENSOR_TYPES, ALERT_TYPES } from '../utils/constants';
@@ -122,6 +123,8 @@ const HomeScreen = () => {
       severity: alert.severity,
     }));
   };
+
+
 
   if (loading) {
     return (
@@ -232,38 +235,40 @@ const HomeScreen = () => {
           )}
         </View>
 
-        {/* User Statistics */}
-        {data?.stats && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>📊 Your Statistics</Text>
-            <View style={[styles.statsContainer, { backgroundColor: colors.surface }]}>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.primary }]}>
-                  {data.stats.total_predictions || 0}
-                </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  Total Predictions
-                </Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.highRisk }]}>
-                  {data.stats.high_risk_predictions || 0}
-                </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  High Risk Alerts
-                </Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.info }]}>
-                  {data.stats.active_devices || 0}
-                </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  Active Sensors
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
+                 {/* User Statistics */}
+         {data?.stats && (
+           <View style={styles.section}>
+             <Text style={[styles.sectionTitle, { color: colors.text }]}>📊 Statistics</Text>
+             
+             {/* Quick Stats */}
+             <View style={[styles.statsContainer, { backgroundColor: colors.surface }]}>
+               <View style={styles.statItem}>
+                 <Text style={[styles.statValue, { color: colors.primary }]}>
+                   {data.stats.total_predictions || 0}
+                 </Text>
+                 <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                   Total Predictions
+                 </Text>
+               </View>
+               <View style={styles.statItem}>
+                 <Text style={[styles.statValue, { color: colors.highRisk }]}>
+                   {data.stats.high_risk_predictions || 0}
+                 </Text>
+                 <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                   High Risk Alerts
+                 </Text>
+               </View>
+               <View style={styles.statItem}>
+                 <Text style={[styles.statValue, { color: colors.info }]}>
+                   {data.stats.active_devices || 0}
+                 </Text>
+                 <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                   Active Sensors
+                 </Text>
+               </View>
+             </View>
+           </View>
+         )}
       </ScrollView>
     </SafeAreaView>
   );

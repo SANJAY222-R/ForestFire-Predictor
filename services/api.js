@@ -36,7 +36,8 @@ const FALLBACK_DATA = {
     active_devices: 1,
     total_alerts: 1,
     unread_alerts: 0,
-  }
+  },
+
 };
 
 class ApiService {
@@ -216,6 +217,8 @@ class ApiService {
     const response = await this.get('/users/stats');
     return response.stats || response;
   }
+
+
 
   // Sensor endpoints
   async getSensorDevices() {

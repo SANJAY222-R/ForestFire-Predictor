@@ -147,7 +147,10 @@ export default function CustomDrawerContent(props) {
             );
           })}
         </View>
+      </View>
 
+      {/* Bottom Section - Sign Out and Version */}
+      <View style={styles.bottomSection}>
         {/* Divider */}
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
@@ -192,6 +195,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    justifyContent: 'space-between',
   },
   header: {
     padding: 16,
@@ -262,6 +266,7 @@ const styles = StyleSheet.create({
   menuContainer: {
     paddingTop: 12,
     paddingHorizontal: 12,
+    flex: 1,
   },
   menuItem: {
     flexDirection: 'row',
@@ -322,6 +327,9 @@ const styles = StyleSheet.create({
   authButtonText: {
     ...typography.button,
     marginLeft: 8,
+  },
+  bottomSection: {
+    paddingBottom: 20,
   },
   footer: {
     padding: 12,
