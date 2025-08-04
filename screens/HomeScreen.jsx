@@ -15,7 +15,7 @@ import SensorCard from '../components/SensorCard';
 import AlertCard from '../components/AlertCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
-import NetworkStatus from '../components/NetworkStatus';
+
 import { useDashboardData, useAcknowledgeAlert } from '../hooks/useApi';
 import { useUserSync } from '../hooks/useUserSync';
 import { SENSOR_TYPES, ALERT_TYPES } from '../utils/constants';
@@ -57,91 +57,62 @@ const HomeScreen = () => {
   const transformSensorData = (readings) => {
     if (!readings || !Array.isArray(readings) || readings.length === 0) return [];
 
-    const latestReadings = readings.slice(0, 3); // Get latest 3 readings
+    // Get the latest reading that contains all three sensor types
+    const latestReading = readings[0];
     
-    return latestReadings.map((reading, index) => {
-      const getSensorInfo = (type) => {
-        switch (type) {
-          case SENSOR_TYPES.TEMPERATURE:
-            return {
-              icon: 'thermometer-outline',
-              title: 'Temperature',
-              unit: '°C',
-              recommendation: (reading.temperature || 0) > 30 
-                ? '🔥 High temperature detected – monitor closely'
-                : (reading.temperature || 0) > 25 
-                ? '⚠️ Elevated temperature – stay alert'
-                : '✅ Temperature within normal range',
-              riskLevel: (reading.temperature || 0) > 30 ? 'high' : (reading.temperature || 0) > 25 ? 'moderate' : 'low',
-            };
-          case SENSOR_TYPES.HUMIDITY:
-            return {
-              icon: 'water-outline',
-              title: 'Humidity',
-              unit: '%',
-              recommendation: (reading.humidity || 0) < 30 
-                ? '⚠️ Low humidity increases fire risk'
-                : (reading.humidity || 0) < 50 
-                ? '🟡 Moderate humidity – monitor conditions'
-                : '✅ Humidity levels are safe',
-              riskLevel: (reading.humidity || 0) < 30 ? 'high' : (reading.humidity || 0) < 50 ? 'moderate' : 'low',
-            };
-          case SENSOR_TYPES.SMOKE:
-            return {
-              icon: 'cloud-outline',
-              title: 'Smoke Level',
-              unit: 'ppm',
-              recommendation: (reading.smoke_level || 0) > 200 
-                ? '🚨 High smoke levels detected!'
-                : (reading.smoke_level || 0) > 100 
-                ? '⚠️ Elevated smoke levels'
-                : '✅ Safe smoke levels',
-              riskLevel: (reading.smoke_level || 0) > 200 ? 'high' : (reading.smoke_level || 0) > 100 ? 'moderate' : 'low',
-            };
-          default:
-            return {
-              icon: 'analytics-outline',
-              title: 'Sensor Reading',
-              unit: '',
-              recommendation: '✅ Normal reading',
-              riskLevel: 'low',
-            };
-        }
-      };
+    if (!latestReading) return [];
 
-      const sensorInfo = getSensorInfo(Object.keys(reading).find(key => 
-        [SENSOR_TYPES.TEMPERATURE, SENSOR_TYPES.HUMIDITY, SENSOR_TYPES.SMOKE].includes(key)
-      ));
-
-      // Extract the appropriate value based on sensor type
-      let value = 'N/A';
-      const sensorType = Object.keys(reading).find(key => 
-        [SENSOR_TYPES.TEMPERATURE, SENSOR_TYPES.HUMIDITY, SENSOR_TYPES.SMOKE].includes(key)
-      );
-      
-      if (sensorType) {
-        value = reading[sensorType] || 'N/A';
-      } else {
-        // Fallback to common sensor values
-        value = reading.temperature || reading.humidity || reading.smoke_level || 'N/A';
+    // Create three separate sensor cards for temperature, humidity, and smoke
+    const sensors = [
+      {
+        icon: 'thermometer-outline',
+        title: 'Temperature',
+        value: latestReading.temperature || latestReading.temp || 'N/A',
+        unit: '°C',
+        recommendation: (latestReading.temperature || latestReading.temp || 0) > 30 
+          ? '🔥 High temperature detected – monitor closely'
+          : (latestReading.temperature || latestReading.temp || 0) > 25 
+          ? '⚠️ Elevated temperature – stay alert'
+          : '✅ Temperature within normal range',
+        riskLevel: (latestReading.temperature || latestReading.temp || 0) > 30 ? 'high' : (latestReading.temperature || latestReading.temp || 0) > 25 ? 'moderate' : 'low',
+      },
+      {
+        icon: 'water-outline',
+        title: 'Humidity',
+        value: latestReading.humidity || latestReading.hum || 'N/A',
+        unit: '%',
+        recommendation: (latestReading.humidity || latestReading.hum || 0) < 30 
+          ? '⚠️ Low humidity increases fire risk'
+          : (latestReading.humidity || latestReading.hum || 0) < 50 
+          ? '🟡 Moderate humidity – monitor conditions'
+          : '✅ Humidity levels are safe',
+        riskLevel: (latestReading.humidity || latestReading.hum || 0) < 30 ? 'high' : (latestReading.humidity || latestReading.hum || 0) < 50 ? 'moderate' : 'low',
+      },
+      {
+        icon: 'cloud-outline',
+        title: 'Smoke Level',
+        value: latestReading.smoke_level || latestReading.smoke || 'N/A',
+        unit: 'ppm',
+        recommendation: (latestReading.smoke_level || latestReading.smoke || 0) > 200 
+          ? '🚨 High smoke levels detected!'
+          : (latestReading.smoke_level || latestReading.smoke || 0) > 100 
+          ? '⚠️ Elevated smoke levels'
+          : '✅ Safe smoke levels',
+        riskLevel: (latestReading.smoke_level || latestReading.smoke || 0) > 200 ? 'high' : (latestReading.smoke_level || latestReading.smoke || 0) > 100 ? 'moderate' : 'low',
       }
+    ];
 
-      return {
-        icon: sensorInfo.icon,
-        title: sensorInfo.title,
-        value: value,
-        unit: sensorInfo.unit,
-        recommendation: sensorInfo.recommendation,
-        riskLevel: sensorInfo.riskLevel,
-      };
-    });
+    return sensors;
   };
 
   // Transform alert data for AlertCard component
   const transformAlertData = (alerts) => {
     if (!alerts || !Array.isArray(alerts) || alerts.length === 0) return [];
 
-    return alerts.map(alert => ({
+    // Limit to 5 most recent alerts
+    const limitedAlerts = alerts.slice(0, 5);
+
+    return limitedAlerts.map(alert => ({
       id: alert.id,
       title: alert.title || alert.alert_type,
       time: new Date(alert.created_at).toLocaleString(),
@@ -212,24 +183,26 @@ const HomeScreen = () => {
           </Text>
         </View>
 
-        {/* Network Status for Debugging */}
-        <NetworkStatus />
+
 
         {/* Live Sensor Readings */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>🌡️ Live Sensor Readings</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>🌡️ Current Sensor Values</Text>
           {sensorData.length > 0 ? (
-            sensorData.map((sensor, index) => (
-              <SensorCard
-                key={index}
-                icon={sensor.icon}
-                title={sensor.title}
-                value={sensor.value}
-                unit={sensor.unit}
-                recommendation={sensor.recommendation}
-                riskLevel={sensor.riskLevel}
-              />
-            ))
+            <View style={styles.sensorGrid}>
+              {sensorData.map((sensor, index) => (
+                <View key={index} style={styles.sensorCard}>
+                  <SensorCard
+                    icon={sensor.icon}
+                    title={sensor.title}
+                    value={sensor.value}
+                    unit={sensor.unit}
+                    recommendation={sensor.recommendation}
+                    riskLevel={sensor.riskLevel}
+                  />
+                </View>
+              ))}
+            </View>
           ) : (
             <View style={[styles.emptyState, { backgroundColor: colors.surface }]}>
               <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
@@ -241,7 +214,7 @@ const HomeScreen = () => {
 
         {/* Live Alerts Feed */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>🔔 Recent Alerts</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>🔔 Recent Alerts (Last 5)</Text>
           {alertsData.length > 0 ? (
             alertsData.map((alert) => (
               <AlertCard 
@@ -350,6 +323,16 @@ const styles = StyleSheet.create({
   statLabel: {
     ...typography.caption,
     textAlign: 'center',
+  },
+  sensorGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'block',
+    marginVertical: 8,
+  },
+  sensorCard: {
+    width: '100%',
+    marginBottom: 12,
   },
 });
 

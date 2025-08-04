@@ -306,7 +306,7 @@ class ApiService {
 
   async getRecentAlerts() {
     const response = await this.get('/alerts/', { 
-      limit: 10, 
+      limit: 5, 
       sort: 'created_at',
       order: 'desc' 
     });
