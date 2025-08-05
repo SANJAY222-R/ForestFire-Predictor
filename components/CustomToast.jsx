@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
@@ -11,35 +11,31 @@ const Toast = ({ text1, text2, type, onPress, onHide }) => {
     switch (type) {
       case 'success':
         return {
-          icon: 'checkmark-circle',
-          backgroundColor: colors.success + '20',
-          borderColor: colors.success,
-          iconColor: colors.success,
+          icon: 'checkmark',
+          iconColor: '#FFFFFF',
+          iconBackground: colors.lowRisk,
           textColor: colors.text,
         };
       case 'error':
         return {
-          icon: 'close-circle',
-          backgroundColor: colors.error + '20',
-          borderColor: colors.error,
-          iconColor: colors.error,
+          icon: 'close',
+          iconColor: '#FFFFFF',
+          iconBackground: colors.highRisk,
           textColor: colors.text,
         };
       case 'warning':
         return {
           icon: 'warning',
-          backgroundColor: colors.warning + '20',
-          borderColor: colors.warning,
-          iconColor: colors.warning,
+          iconColor: '#FFFFFF',
+          iconBackground: colors.moderateRisk,
           textColor: colors.text,
         };
       case 'info':
       default:
         return {
-          icon: 'information-circle',
-          backgroundColor: colors.primary + '20',
-          borderColor: colors.primary,
-          iconColor: colors.primary,
+          icon: 'information',
+          iconColor: '#FFFFFF',
+          iconBackground: colors.primary,
           textColor: colors.text,
         };
     }
@@ -52,17 +48,18 @@ const Toast = ({ text1, text2, type, onPress, onHide }) => {
       style={[
         styles.container,
         {
-          backgroundColor: config.backgroundColor,
-          borderColor: config.borderColor,
+          backgroundColor: colors.surface,
+          shadowColor: colors.shadow,
         },
       ]}
       onPress={onPress}
-      activeOpacity={0.8}
+      activeOpacity={0.95}
     >
       <View style={styles.content}>
-        <View style={[styles.iconContainer, { backgroundColor: config.backgroundColor }]}>
-          <Ionicons name={config.icon} size={24} color={config.iconColor} />
+        <View style={[styles.iconContainer, { backgroundColor: config.iconBackground }]}>
+          <Ionicons name={config.icon} size={20} color={config.iconColor} />
         </View>
+        
         <View style={styles.textContainer}>
           {text1 && (
             <Text style={[styles.title, { color: config.textColor }]}>
@@ -75,8 +72,13 @@ const Toast = ({ text1, text2, type, onPress, onHide }) => {
             </Text>
           )}
         </View>
-        <TouchableOpacity onPress={onHide} style={styles.closeButton}>
-          <Ionicons name="close" size={20} color={config.textColor} />
+        
+        <TouchableOpacity 
+          onPress={onHide} 
+          style={styles.closeButton}
+          activeOpacity={0.6}
+        >
+          <Ionicons name="close" size={16} color={colors.text} />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -89,6 +91,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderRadius: 12,
     borderWidth: 1,
+    borderColor: '#E0E0E0',
     shadowOffset: {
       width: 0,
       height: 2,
@@ -96,31 +99,37 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    backgroundColor: '#FFFFFF',
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
+    paddingVertical: 14,
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 16,
   },
   textContainer: {
     flex: 1,
+    paddingRight: 12,
   },
   title: {
     ...typography.body1,
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 2,
+    fontSize: 16,
   },
   message: {
     ...typography.body2,
-    opacity: 0.9,
+    opacity: 0.8,
+    fontSize: 14,
+    lineHeight: 20,
   },
   closeButton: {
     width: 24,

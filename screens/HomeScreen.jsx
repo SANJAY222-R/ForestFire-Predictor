@@ -18,12 +18,14 @@ import AlertCard from '../components/AlertCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import RiskBadge from '../components/RiskBadge';
+import NotificationStatus from '../components/NotificationStatus';
 
 import { useDashboardData, useAcknowledgeAlert } from '../hooks/useApi';
 import { useUserSync } from '../hooks/useUserSync';
 import { SENSOR_TYPES, ALERT_TYPES } from '../utils/constants';
 import apiService from '../services/api';
-import { showSuccessToast, showErrorToast, showInfoToast } from '../services/toastService';
+import { showSuccessToast, showErrorToast, showInfoToast, showFireAlertToast } from '../services/toastService';
+import notificationService from '../services/notificationService';
 
 const HomeScreen = ({ navigation }) => {
   const { colors } = useTheme();
@@ -52,6 +54,30 @@ const HomeScreen = ({ navigation }) => {
     }
   }, [user, isLoaded, isSignedIn, syncUser]);
 
+  // Initialize notification service
+  useEffect(() => {
+    const initializeNotifications = async () => {
+      try {
+        console.log('🔔 Initializing notification service...');
+        const success = await notificationService.initialize();
+        if (success) {
+          console.log('✅ Notification service initialized successfully');
+        } else {
+          console.warn('⚠️ Notification service initialization failed');
+        }
+      } catch (error) {
+        console.error('❌ Error initializing notification service:', error);
+      }
+    };
+
+    initializeNotifications();
+
+    // Cleanup on unmount
+    return () => {
+      notificationService.cleanup();
+    };
+  }, []);
+
   // Fetch ThingSpeak data
   const fetchThingSpeakData = async () => {
     try {
@@ -63,6 +89,11 @@ const HomeScreen = ({ navigation }) => {
       if (response.success) {
         setThingSpeakData(response);
         setLastUpdate(new Date().toLocaleTimeString());
+        
+        // Check for fire alerts if prediction is available
+        if (response.prediction) {
+          handleFireAlert(response.prediction);
+        }
       } else {
         setThingSpeakError('Failed to fetch real-time data');
       }
@@ -84,6 +115,31 @@ const HomeScreen = ({ navigation }) => {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Handle fire alerts when predictions are received
+  const handleFireAlert = async (prediction) => {
+    if (!prediction || !prediction.risk_level) return;
+
+    // Check if this is a high-risk prediction that requires alert
+    if (['high', 'critical'].includes(prediction.risk_level)) {
+      try {
+        console.log(`🚨 High risk prediction detected: ${prediction.risk_level}`);
+        
+        // Send fire alert notification
+        await notificationService.sendFireAlert(prediction);
+        
+        // Show toast notification using the new fire alert toast
+        showFireAlertToast(
+          prediction.risk_level,
+          Math.round((prediction.confidence_score || 0) * 100)
+        );
+        
+      } catch (error) {
+        console.error('❌ Error handling fire alert:', error);
+        showErrorToast('Failed to send fire alert notification');
+      }
+    }
+  };
 
   const onRefresh = React.useCallback(() => {
     refetch();
@@ -222,7 +278,7 @@ const HomeScreen = ({ navigation }) => {
         {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.welcomeText, { color: colors.text }]}>
-            Welcome back, {user?.firstName || 'User'}! 👋
+            Welcome back {user?.firstName}! 👋
           </Text>
           <Text style={[styles.statusText, { color: colors.textSecondary }]}>
             {isSignedIn ? 'You are signed in' : 'Please sign in to continue'}
@@ -308,6 +364,12 @@ const HomeScreen = ({ navigation }) => {
             </View>
           </View>
         )}
+
+        {/* Notification Status */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>🔔 Alert System</Text>
+          <NotificationStatus />
+        </View>
 
         {/* Live Alerts Feed */}
         <View style={styles.section}>

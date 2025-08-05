@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
+import notificationService from '../services/notificationService';
+import { showSuccessToast, showErrorToast, showInfoToast, showFireAlertToast } from '../services/toastService';
 
 const NotificationPreferencesScreen = ({ navigation }) => {
   const { colors } = useTheme();
@@ -42,11 +44,34 @@ const NotificationPreferencesScreen = ({ navigation }) => {
   const handleSavePreferences = async () => {
     setIsLoading(true);
     try {
+      // Test notification service
+      const status = await notificationService.getPermissionsStatus();
+      
+      if (status === 'granted') {
+        // Test fire alert notification
+        await notificationService.sendFireAlert({
+          risk_level: 'high',
+          confidence_score: 0.85,
+          recommendations: ['Monitor conditions closely', 'Stay alert for changes']
+        });
+        
+        showSuccessToast('Notification test sent successfully!');
+      } else {
+        // Request permissions
+        const newStatus = await notificationService.requestPermissions();
+        if (newStatus === 'granted') {
+          showSuccessToast('Notification permissions granted!');
+        } else {
+          showErrorToast('Notification permissions required for alerts');
+        }
+      }
+      
       // Simulate API call to save preferences
       await new Promise(resolve => setTimeout(resolve, 1000));
-      Alert.alert('Success', 'Notification preferences saved successfully!');
+      showSuccessToast('Notification preferences saved successfully!');
     } catch (error) {
-      Alert.alert('Error', 'Failed to save preferences. Please try again.');
+      console.error('Error saving preferences:', error);
+      showErrorToast('Failed to save preferences. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -57,6 +82,36 @@ const NotificationPreferencesScreen = ({ navigation }) => {
       ...prev,
       [key]: !prev[key]
     }));
+  };
+
+  const handleTestNotification = async () => {
+    try {
+      setIsLoading(true);
+      
+      const status = await notificationService.getPermissionsStatus();
+      if (status !== 'granted') {
+        const newStatus = await notificationService.requestPermissions();
+        if (newStatus !== 'granted') {
+          showErrorToast('Notification permissions required for test');
+          return;
+        }
+      }
+      
+      // Send test fire alert
+      await notificationService.sendFireAlert({
+        risk_level: 'high',
+        confidence_score: 0.85,
+        recommendations: ['This is a test alert', 'Sound should play for 10 seconds']
+      });
+      
+      showFireAlertToast('high', 85);
+      
+    } catch (error) {
+      console.error('Error sending test notification:', error);
+      showErrorToast('Failed to send test notification');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const NotificationItem = ({ 
@@ -146,6 +201,23 @@ const NotificationPreferencesScreen = ({ navigation }) => {
             subtitle="Receive notifications via SMS"
             value={notifications.smsNotifications}
             onToggle={() => handleToggleSetting('smsNotifications')}
+          />
+        </View>
+
+        {/* Test Notification */}
+        <View style={styles.section}>
+          <SectionHeader 
+            title="🧪 Test Notifications" 
+            subtitle="Test the notification system with a sample alert"
+          />
+          <NotificationItem
+            icon="play-outline"
+            title="Test Fire Alert"
+            subtitle="Send a test notification with sound (10 seconds)"
+            value={false}
+            onToggle={handleTestNotification}
+            showSwitch={false}
+            onPress={handleTestNotification}
           />
         </View>
 

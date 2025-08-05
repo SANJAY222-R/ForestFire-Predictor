@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
+import { showInfoToast } from '../services/toastService';
 
 const HelpSupportScreen = ({ navigation }) => {
   const { colors } = useTheme();
@@ -66,7 +67,9 @@ const HelpSupportScreen = ({ navigation }) => {
       title: "Live Chat",
       subtitle: "Chat with our support team",
       icon: "chatbubble-outline",
-      action: () => Alert.alert('Live Chat', 'Live chat feature coming soon!')
+      action: () => {
+        showInfoToast('Live chat feature coming soon!');
+      }
     },
     {
       id: 3,
@@ -80,7 +83,9 @@ const HelpSupportScreen = ({ navigation }) => {
       title: "Report a Bug",
       subtitle: "Help us improve the app",
       icon: "bug-outline",
-      action: () => Alert.alert('Report Bug', 'Bug reporting feature coming soon!')
+      action: () => {
+        showInfoToast('Bug reporting feature coming soon!');
+      }
     }
   ];
 
@@ -101,43 +106,31 @@ const HelpSupportScreen = ({ navigation }) => {
     },
     {
       id: 3,
-      title: "Setting Up Alerts",
-      subtitle: "Configure notification preferences",
+      title: "Setting Up Notifications",
+      subtitle: "Configure your alert preferences",
       icon: "notifications-outline",
       duration: "4 min"
     },
     {
       id: 4,
-      title: "Using Location Features",
-      subtitle: "Set up location-based predictions",
+      title: "Using Location Services",
+      subtitle: "Set up location-based alerts",
       icon: "location-outline",
-      duration: "6 min"
+      duration: "3 min"
     }
   ];
 
-  const appInfo = {
-    version: "1.0.0",
-    buildNumber: "2024.1.0",
-    lastUpdated: "January 2024",
-    developer: "Forest Fire Predictor Team",
-    website: "https://forestfirepredictor.com",
-    privacyPolicy: "https://forestfirepredictor.com/privacy",
-    termsOfService: "https://forestfirepredictor.com/terms"
-  };
-
   const handleContactSupport = (option) => {
-    option.action();
+    try {
+      option.action();
+    } catch (error) {
+      console.error('Error contacting support:', error);
+      showInfoToast('Unable to open support option. Please try again.');
+    }
   };
 
   const handleTutorial = (tutorial) => {
-    Alert.alert(
-      tutorial.title,
-      `Would you like to watch the tutorial: "${tutorial.title}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Watch', onPress: () => Alert.alert('Tutorial', 'Tutorial feature coming soon!') }
-      ]
-    );
+    showInfoToast(`${tutorial.title} tutorial coming soon!`);
   };
 
   const handleFAQToggle = (faqId) => {
@@ -186,34 +179,42 @@ const HelpSupportScreen = ({ navigation }) => {
       </View>
       <View style={styles.tutorialMeta}>
         <Text style={[styles.tutorialDuration, { color: colors.textLight }]}>{tutorial.duration}</Text>
-        <Ionicons name="play" size={16} color={colors.primary} />
+        <Ionicons name="play-circle-outline" size={20} color={colors.primary} />
       </View>
     </TouchableOpacity>
   );
 
   const FAQItem = ({ faq, isExpanded, onToggle }) => (
-    <TouchableOpacity 
-      style={[
-        styles.faqItem, 
-        { 
-          backgroundColor: colors.surface,
-          shadowColor: colors.shadow
-        }
-      ]} 
-      onPress={onToggle}
-    >
-      <View style={styles.faqHeader}>
-        <Text style={[styles.faqQuestion, { color: colors.text }]}>{faq.question}</Text>
+    <View style={[styles.faqItem, { backgroundColor: colors.surface, shadowColor: colors.shadow }]}>
+      <TouchableOpacity 
+        style={styles.faqHeader} 
+        onPress={onToggle}
+        activeOpacity={0.7}
+      >
+        <View style={styles.faqQuestionContainer}>
+          <Text style={[styles.faqQuestion, { color: colors.text }]}>{faq.question}</Text>
+        </View>
         <Ionicons 
           name={isExpanded ? "chevron-up" : "chevron-down"} 
           size={20} 
-          color={colors.textLight} 
+          color={colors.primary} 
         />
-      </View>
+      </TouchableOpacity>
       {isExpanded && (
-        <Text style={[styles.faqAnswer, { color: colors.textSecondary }]}>{faq.answer}</Text>
+        <View style={styles.faqAnswerContainer}>
+          <Text style={[styles.faqAnswer, { color: colors.textSecondary }]}>{faq.answer}</Text>
+        </View>
       )}
-    </TouchableOpacity>
+    </View>
+  );
+
+  const SectionHeader = ({ title, subtitle }) => (
+    <View style={styles.sectionHeader}>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
+      {subtitle && (
+        <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text>
+      )}
+    </View>
   );
 
   return (
@@ -228,13 +229,13 @@ const HelpSupportScreen = ({ navigation }) => {
           </TouchableOpacity>
           <Text style={[styles.title, { color: colors.text }]}>Help & Support</Text>
         </View>
-        {/* Support Options */}
+
+        {/* Contact Support */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>📞 Contact Support</Text>
-          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
-            Need help? We're here to assist you.
-          </Text>
-          
+          <SectionHeader 
+            title="📞 Contact Support" 
+            subtitle="Get help from our support team"
+          />
           {supportOptions.map(option => (
             <SupportItem 
               key={option.id} 
@@ -246,11 +247,10 @@ const HelpSupportScreen = ({ navigation }) => {
 
         {/* Tutorials */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>📚 Tutorials</Text>
-          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
-            Learn how to use the app effectively.
-          </Text>
-          
+          <SectionHeader 
+            title="📚 Tutorials" 
+            subtitle="Learn how to use the app effectively"
+          />
           {tutorials.map(tutorial => (
             <TutorialItem 
               key={tutorial.id} 
@@ -260,13 +260,12 @@ const HelpSupportScreen = ({ navigation }) => {
           ))}
         </View>
 
-        {/* FAQs */}
+        {/* FAQ */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>❓ Frequently Asked Questions</Text>
-          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
-            Find answers to common questions.
-          </Text>
-          
+          <SectionHeader 
+            title="❓ Frequently Asked Questions" 
+            subtitle="Find answers to common questions"
+          />
           {faqs.map(faq => (
             <FAQItem 
               key={faq.id} 
@@ -277,67 +276,44 @@ const HelpSupportScreen = ({ navigation }) => {
           ))}
         </View>
 
-        {/* App Information */}
+        {/* Emergency Information */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>ℹ️ App Information</Text>
-          
-          <View style={[styles.appInfoCard, { backgroundColor: colors.surface }]}>
-            <View style={styles.appInfoRow}>
-              <Text style={[styles.appInfoLabel, { color: colors.textSecondary }]}>Version:</Text>
-              <Text style={[styles.appInfoValue, { color: colors.text }]}>{appInfo.version}</Text>
+          <SectionHeader 
+            title="🚨 Emergency Information" 
+            subtitle="Important safety information"
+          />
+          <View style={[styles.emergencyCard, { backgroundColor: colors.highRisk + '10', borderColor: colors.highRisk + '30' }]}>
+            <View style={styles.emergencyHeader}>
+              <Ionicons name="warning" size={24} color={colors.highRisk} />
+              <Text style={[styles.emergencyTitle, { color: colors.highRisk }]}>Emergency Contact</Text>
             </View>
-            <View style={styles.appInfoRow}>
-              <Text style={[styles.appInfoLabel, { color: colors.textSecondary }]}>Build:</Text>
-              <Text style={[styles.appInfoValue, { color: colors.text }]}>{appInfo.buildNumber}</Text>
-            </View>
-            <View style={styles.appInfoRow}>
-              <Text style={[styles.appInfoLabel, { color: colors.textSecondary }]}>Updated:</Text>
-              <Text style={[styles.appInfoValue, { color: colors.text }]}>{appInfo.lastUpdated}</Text>
-            </View>
-            <View style={styles.appInfoRow}>
-              <Text style={[styles.appInfoLabel, { color: colors.textSecondary }]}>Developer:</Text>
-              <Text style={[styles.appInfoValue, { color: colors.text }]}>{appInfo.developer}</Text>
-            </View>
-          </View>
-
-          <View style={styles.legalLinks}>
-            <TouchableOpacity 
-              style={styles.legalLink}
-              onPress={() => Linking.openURL(appInfo.website)}
+            <Text style={[styles.emergencyText, { color: colors.text }]}>
+              In case of a fire emergency, immediately call your local emergency services:
+            </Text>
+            <TouchableOpacity
+              style={[styles.emergencyButton, { backgroundColor: colors.highRisk }]}
+              onPress={() => Linking.openURL('tel:911')}
             >
-              <Text style={[styles.legalLinkText, { color: colors.primary }]}>Website</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.legalLink}
-              onPress={() => Linking.openURL(appInfo.privacyPolicy)}
-            >
-              <Text style={[styles.legalLinkText, { color: colors.primary }]}>Privacy Policy</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.legalLink}
-              onPress={() => Linking.openURL(appInfo.termsOfService)}
-            >
-              <Text style={[styles.legalLinkText, { color: colors.primary }]}>Terms of Service</Text>
+              <Ionicons name="call" size={20} color={colors.surface} />
+              <Text style={[styles.emergencyButtonText, { color: colors.surface }]}>Call 911</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Emergency Information */}
+        {/* App Information */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>🚨 Emergency Information</Text>
-          
-          <View style={[styles.emergencyCard, { backgroundColor: colors.error + '10' }]}>
-            <Ionicons name="warning" size={24} color={colors.error} />
-            <Text style={[styles.emergencyTitle, { color: colors.error }]}>Emergency Contact</Text>
-            <Text style={[styles.emergencyText, { color: colors.textSecondary }]}>
-              In case of a fire emergency, immediately call your local emergency services.
+          <SectionHeader 
+            title="ℹ️ App Information" 
+            subtitle="About the Forest Fire Predictor"
+          />
+          <View style={[styles.infoCard, { backgroundColor: colors.surface, shadowColor: colors.shadow }]}>
+            <Text style={[styles.infoTitle, { color: colors.text }]}>Version 1.0.0</Text>
+            <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+              Forest Fire Predictor helps you stay informed about fire risks in your area using advanced machine learning and real-time environmental data.
             </Text>
-            <TouchableOpacity
-              style={[styles.emergencyButton, { backgroundColor: colors.error }]}
-              onPress={() => Linking.openURL('tel:911')}
-            >
-              <Text style={[styles.emergencyButtonText, { color: colors.surface }]}>Call 911</Text>
-            </TouchableOpacity>
+            <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+              This app is designed to provide early warning systems and should not replace official emergency services or evacuation orders.
+            </Text>
           </View>
         </View>
       </ScrollView>
@@ -358,27 +334,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 15,
-    backgroundColor: 'transparent', // Ensure it doesn't interfere with SafeAreaView
   },
   backButton: {
     padding: 8,
     marginRight: 10,
   },
   title: {
-    ...typography.h3,
-    fontWeight: '600',
+    ...typography.h2,
+    fontWeight: 'bold',
   },
   section: {
     paddingHorizontal: 20,
     marginBottom: 30,
   },
+  sectionHeader: {
+    marginBottom: 16,
+  },
   sectionTitle: {
     ...typography.h3,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   sectionSubtitle: {
-    ...typography.body2,
-    marginBottom: 16,
+    ...typography.caption,
   },
   supportItem: {
     flexDirection: 'row',
@@ -455,7 +432,6 @@ const styles = StyleSheet.create({
   },
   faqItem: {
     borderRadius: 12,
-    padding: 16,
     marginBottom: 8,
     shadowOffset: {
       width: 0,
@@ -464,76 +440,80 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
+    overflow: 'hidden',
   },
   faqHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    padding: 16,
+  },
+  faqQuestionContainer: {
+    flex: 1,
   },
   faqQuestion: {
     ...typography.body1,
     fontWeight: '600',
-    flex: 1,
-    marginRight: 12,
+  },
+  faqAnswerContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
   faqAnswer: {
     ...typography.body2,
-    marginTop: 12,
     lineHeight: 20,
-  },
-  appInfoCard: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  appInfoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  appInfoLabel: {
-    ...typography.body2,
-    fontWeight: '500',
-  },
-  appInfoValue: {
-    ...typography.body2,
-  },
-  legalLinks: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  legalLink: {
-    paddingVertical: 8,
-  },
-  legalLinkText: {
-    ...typography.body2,
-    fontWeight: '600',
   },
   emergencyCard: {
     borderRadius: 12,
     padding: 16,
+    borderWidth: 1,
+  },
+  emergencyHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 12,
   },
   emergencyTitle: {
     ...typography.body1,
-    fontWeight: '600',
-    marginTop: 8,
-    marginBottom: 8,
+    fontWeight: '700',
+    marginLeft: 8,
   },
   emergencyText: {
     ...typography.body2,
-    textAlign: 'center',
     marginBottom: 16,
     lineHeight: 20,
   },
   emergencyButton: {
-    borderRadius: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    padding: 12,
   },
   emergencyButtonText: {
     ...typography.body2,
     fontWeight: '600',
+    marginLeft: 8,
+  },
+  infoCard: {
+    borderRadius: 12,
+    padding: 16,
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  infoTitle: {
+    ...typography.body1,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  infoText: {
+    ...typography.body2,
+    lineHeight: 20,
+    marginBottom: 8,
   },
 });
 

@@ -1,23 +1,40 @@
 import apiService from './api';
+import notificationService from './notificationService';
 
 class ThingSpeakService {
   constructor() {
     this.baseUrl = 'https://api.thingspeak.com';
     this.channelId = '3019224';
     this.apiKey = 'YKO43PVQCCPOJ404';
-    this.updateInterval = 30000; // 30 seconds
+    this.updateInterval = 10000; // 10 seconds for very rapid updates
     this.isPolling = false;
     this.pollingInterval = null;
+    this.lastProcessedTimestamp = null;
+    this.autoPredictionEnabled = true;
+    this.autoAlertEnabled = true;
+    this.lastNotificationTime = null;
+    this.notificationCooldown = 60000; // 1 minute cooldown between notifications
+    this.riskThreshold = 'moderate'; // Only notify for moderate+ risk levels
+    this.consecutiveHighRiskCount = 0;
+    this.requiredConsecutiveHighRisk = 2; // Require 2 consecutive high-risk readings
+    this.currentSensorData = null;
+    this.currentPrediction = null;
   }
 
-  // Fetch real-time data from ThingSpeak
+  // Fetch real-time data from ThingSpeak with optimized caching
   async fetchRealTimeData() {
     try {
       const url = `${this.baseUrl}/channels/${this.channelId}/feeds.json?api_key=${this.apiKey}&results=1`;
       
       console.log('🌐 Fetching ThingSpeak data...');
       
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       
       if (!response.ok) {
         throw new Error(`ThingSpeak API error: ${response.status}`);
@@ -40,9 +57,15 @@ class ThingSpeakService {
     }
   }
 
-  // Parse ThingSpeak data into our sensor reading format
+  // Parse ThingSpeak data into our sensor reading format with validation
   parseThingSpeakData(feed) {
     const timestamp = new Date(feed.created_at);
+    
+    // Validate data quality before processing
+    const hasRequiredData = feed.field1 && feed.field2 && feed.field3;
+    if (!hasRequiredData) {
+      throw new Error('Insufficient sensor data for prediction');
+    }
     
     // Map ThingSpeak fields to our sensor reading format
     const sensorData = {
@@ -68,61 +91,163 @@ class ThingSpeakService {
     return sensorData;
   }
 
-  // Store ThingSpeak data in Neon database
-  async storeThingSpeakData(sensorData) {
+  // Direct ML prediction from current sensor data
+  async predictFromCurrentData(sensorData) {
     try {
-      console.log('💾 Storing ThingSpeak data in database...');
+      console.log('🤖 Creating direct ML prediction from current sensor data...');
       
-      // Create sensor reading
-      const readingResponse = await apiService.createSensorReading(sensorData);
+      // Prepare prediction data from current sensor readings
+      const predictionData = {
+        temperature: sensorData.temperature,
+        humidity: sensorData.humidity,
+        smoke_level: sensorData.smoke_level,
+        air_quality: sensorData.air_quality,
+        wind_speed: sensorData.wind_speed,
+        wind_direction: sensorData.wind_direction,
+        atmospheric_pressure: sensorData.atmospheric_pressure,
+        uv_index: sensorData.uv_index,
+        soil_moisture: sensorData.soil_moisture,
+        rainfall: sensorData.rainfall,
+        device_id: sensorData.device_id
+      };
+
+      // Create prediction using the ML model
+      const predictionResponse = await apiService.createPrediction(predictionData);
+      console.log('✅ Direct ML prediction created:', predictionResponse);
       
-      // Create prediction using the sensor data
-      if (sensorData.temperature && sensorData.humidity && sensorData.smoke_level) {
-        const predictionData = {
-          temperature: sensorData.temperature,
-          humidity: sensorData.humidity,
-          smoke_level: sensorData.smoke_level,
-          air_quality: sensorData.air_quality,
-          wind_speed: sensorData.wind_speed,
-          wind_direction: sensorData.wind_direction,
-          atmospheric_pressure: sensorData.atmospheric_pressure,
-          uv_index: sensorData.uv_index,
-          soil_moisture: sensorData.soil_moisture,
-          rainfall: sensorData.rainfall,
-          device_id: sensorData.device_id
-        };
-        
-        const predictionResponse = await apiService.createPrediction(predictionData);
-        console.log('✅ Prediction created from ThingSpeak data');
-        
-        return {
-          reading: readingResponse,
-          prediction: predictionResponse
-        };
-      }
+      // Update current prediction
+      this.currentPrediction = predictionResponse;
       
-      return { reading: readingResponse };
+      return predictionResponse;
       
     } catch (error) {
-      console.error('❌ Error storing ThingSpeak data:', error);
+      console.error('❌ Error creating direct ML prediction:', error);
       throw error;
     }
   }
 
-  // Start real-time polling
+  // Check if notification should be sent based on risk level and cooldown
+  shouldSendNotification(riskLevel) {
+    const now = Date.now();
+    
+    // Check cooldown period
+    if (this.lastNotificationTime && (now - this.lastNotificationTime) < this.notificationCooldown) {
+      console.log('⏰ Notification cooldown active, skipping...');
+      return false;
+    }
+    
+    // Check risk threshold
+    const riskLevels = ['low', 'moderate', 'high', 'critical'];
+    const currentRiskIndex = riskLevels.indexOf(riskLevel);
+    const thresholdIndex = riskLevels.indexOf(this.riskThreshold);
+    
+    if (currentRiskIndex < thresholdIndex) {
+      console.log(`📊 Risk level ${riskLevel} below threshold ${this.riskThreshold}, skipping notification`);
+      return false;
+    }
+    
+    // For high/critical risk, require consecutive readings
+    if (['high', 'critical'].includes(riskLevel)) {
+      this.consecutiveHighRiskCount++;
+      if (this.consecutiveHighRiskCount < this.requiredConsecutiveHighRisk) {
+        console.log(`⚠️ High risk detected (${this.consecutiveHighRiskCount}/${this.requiredConsecutiveHighRisk} consecutive), waiting for confirmation...`);
+        return false;
+      }
+    } else {
+      // Reset counter for lower risk levels
+      this.consecutiveHighRiskCount = 0;
+    }
+    
+    return true;
+  }
+
+  // Process current sensor data and create rapid predictions
+  async processCurrentSensorData(sensorData) {
+    try {
+      console.log('💾 Processing current sensor data for rapid prediction...');
+      
+      // Check if this is new data (avoid duplicates)
+      if (this.lastProcessedTimestamp && sensorData.timestamp <= this.lastProcessedTimestamp) {
+        console.log('⏭️ Skipping duplicate data');
+        return { skipped: true, reason: 'duplicate_data' };
+      }
+      
+      // Update current sensor data
+      this.currentSensorData = sensorData;
+      
+      // Create sensor reading in database
+      const readingResponse = await apiService.createSensorReading(sensorData);
+      console.log('✅ Sensor reading created:', readingResponse);
+      
+      // Create direct ML prediction from current data
+      let predictionResponse = null;
+      if (this.autoPredictionEnabled && sensorData.temperature && sensorData.humidity && sensorData.smoke_level) {
+        predictionResponse = await this.predictFromCurrentData(sensorData);
+        
+        // Check if notification should be sent based on risk level
+        if (this.autoAlertEnabled && predictionResponse.risk_level && 
+            this.shouldSendNotification(predictionResponse.risk_level)) {
+          
+          console.log(`🚨 ${predictionResponse.risk_level.toUpperCase()} risk confirmed, sending notification...`);
+          
+          // Send fire alert notification with sound
+          try {
+            await notificationService.sendFireAlert(predictionResponse);
+            console.log('🔔 Fire alert notification sent successfully');
+            
+            // Update notification timestamp
+            this.lastNotificationTime = Date.now();
+            
+            // Reset consecutive count after successful notification
+            this.consecutiveHighRiskCount = 0;
+            
+          } catch (notificationError) {
+            console.error('❌ Error sending fire alert notification:', notificationError);
+          }
+        } else if (predictionResponse.risk_level) {
+          console.log(`📊 Risk level: ${predictionResponse.risk_level} - No notification sent (threshold/cooldown)`);
+        }
+      }
+      
+      // Update last processed timestamp
+      this.lastProcessedTimestamp = sensorData.timestamp;
+      
+      return {
+        reading: readingResponse,
+        prediction: predictionResponse,
+        processed: true,
+        timestamp: sensorData.timestamp
+      };
+      
+    } catch (error) {
+      console.error('❌ Error processing current sensor data:', error);
+      throw error;
+    }
+  }
+
+  // Get current sensor data and prediction
+  getCurrentData() {
+    return {
+      sensorData: this.currentSensorData,
+      prediction: this.currentPrediction,
+      lastUpdate: this.lastProcessedTimestamp
+    };
+  }
+
+  // Start rapid real-time polling with direct ML predictions
   startRealTimePolling() {
     if (this.isPolling) {
       console.log('⚠️ ThingSpeak polling already active');
       return;
     }
 
-    console.log('🚀 Starting ThingSpeak real-time polling...');
+    console.log('🚀 Starting rapid ThingSpeak polling with direct ML predictions...');
     this.isPolling = true;
 
-    // Initial fetch
+    // Initial fetch and prediction
     this.pollThingSpeakData();
 
-    // Set up interval
+    // Set up rapid interval
     this.pollingInterval = setInterval(() => {
       this.pollThingSpeakData();
     }, this.updateInterval);
@@ -138,38 +263,67 @@ class ThingSpeakService {
     console.log('⏹️ ThingSpeak polling stopped');
   }
 
-  // Poll ThingSpeak data
+  // Poll ThingSpeak data with direct ML prediction
   async pollThingSpeakData() {
     try {
-      const sensorData = await this.fetchRealTimeData();
-      await this.storeThingSpeakData(sensorData);
+      console.log('📡 Rapid polling ThingSpeak for new data with direct ML prediction...');
       
-      // Emit real-time update event
-      this.emitRealTimeUpdate(sensorData);
+      const sensorData = await this.fetchRealTimeData();
+      const result = await this.processCurrentSensorData(sensorData);
+      
+      if (result.processed) {
+        // Emit real-time update event
+        this.emitRealTimeUpdate(sensorData, result);
+        
+        // Show processing notification only for significant updates
+        if (result.prediction && ['high', 'critical'].includes(result.prediction.risk_level)) {
+          this.showProcessingNotification(result);
+        }
+      }
       
     } catch (error) {
       console.error('❌ ThingSpeak polling error:', error);
+      this.showErrorNotification(error);
     }
   }
 
-  // Emit real-time update for UI
-  emitRealTimeUpdate(sensorData) {
-    // This will be handled by the UI components
-    console.log('📡 Real-time update emitted:', sensorData);
+  // Emit real-time update event
+  emitRealTimeUpdate(sensorData, result) {
+    // This can be used to emit events to other parts of the app
+    console.log('📡 Emitting real-time update:', {
+      sensorData: sensorData,
+      prediction: result.prediction,
+      timestamp: result.timestamp
+    });
   }
 
-  // Get ThingSpeak channel info
+  // Show processing notification for significant updates
+  showProcessingNotification(result) {
+    if (result.prediction) {
+      const riskLevel = result.prediction.risk_level;
+      const confidence = Math.round((result.prediction.confidence_score || 0) * 100);
+      
+      console.log(`📊 Processing complete - Risk: ${riskLevel}, Confidence: ${confidence}%`);
+    }
+  }
+
+  // Show error notification
+  showErrorNotification(error) {
+    console.error('❌ ThingSpeak error:', error.message);
+  }
+
+  // Get channel information
   async getChannelInfo() {
     try {
       const url = `${this.baseUrl}/channels/${this.channelId}.json?api_key=${this.apiKey}`;
       const response = await fetch(url);
       
       if (!response.ok) {
-        throw new Error(`ThingSpeak channel info error: ${response.status}`);
+        throw new Error(`ThingSpeak API error: ${response.status}`);
       }
       
       const data = await response.json();
-      return data.channel;
+      return data;
       
     } catch (error) {
       console.error('❌ Error fetching channel info:', error);
@@ -177,19 +331,18 @@ class ThingSpeakService {
     }
   }
 
-  // Get historical data from ThingSpeak
+  // Get historical data
   async getHistoricalData(results = 100) {
     try {
       const url = `${this.baseUrl}/channels/${this.channelId}/feeds.json?api_key=${this.apiKey}&results=${results}`;
       const response = await fetch(url);
       
       if (!response.ok) {
-        throw new Error(`ThingSpeak historical data error: ${response.status}`);
+        throw new Error(`ThingSpeak API error: ${response.status}`);
       }
       
       const data = await response.json();
-      
-      return data.feeds.map(feed => this.parseThingSpeakData(feed));
+      return data.feeds || [];
       
     } catch (error) {
       console.error('❌ Error fetching historical data:', error);
@@ -197,25 +350,26 @@ class ThingSpeakService {
     }
   }
 
-  // Sync historical data to database
+  // Sync historical data with predictions
   async syncHistoricalData(results = 100) {
     try {
       console.log('🔄 Syncing historical ThingSpeak data...');
       
-      const historicalData = await this.getHistoricalData(results);
-      let syncedCount = 0;
+      const feeds = await this.getHistoricalData(results);
+      let processedCount = 0;
       
-      for (const sensorData of historicalData) {
+      for (const feed of feeds) {
         try {
-          await this.storeThingSpeakData(sensorData);
-          syncedCount++;
+          const sensorData = this.parseThingSpeakData(feed);
+          await this.processCurrentSensorData(sensorData);
+          processedCount++;
         } catch (error) {
-          console.error('❌ Error syncing data point:', error);
+          console.warn('⚠️ Skipping invalid historical data:', error.message);
         }
       }
       
-      console.log(`✅ Synced ${syncedCount} historical data points`);
-      return syncedCount;
+      console.log(`✅ Historical sync complete: ${processedCount} records processed`);
+      return { processed: processedCount, total: feeds.length };
       
     } catch (error) {
       console.error('❌ Error syncing historical data:', error);
@@ -228,22 +382,76 @@ class ThingSpeakService {
     return {
       isPolling: this.isPolling,
       updateInterval: this.updateInterval,
-      channelId: this.channelId
+      lastProcessedTimestamp: this.lastProcessedTimestamp,
+      autoPredictionEnabled: this.autoPredictionEnabled,
+      autoAlertEnabled: this.autoAlertEnabled,
+      riskThreshold: this.riskThreshold,
+      consecutiveHighRiskCount: this.consecutiveHighRiskCount,
+      lastNotificationTime: this.lastNotificationTime,
+      currentSensorData: this.currentSensorData ? 'Available' : 'None',
+      currentPrediction: this.currentPrediction ? 'Available' : 'None'
     };
   }
 
-  // Update polling interval
+  // Set update interval
   setUpdateInterval(interval) {
     this.updateInterval = interval;
+    console.log(`⏱️ Update interval set to ${interval}ms`);
     
+    // Restart polling if active
     if (this.isPolling) {
       this.stopRealTimePolling();
       this.startRealTimePolling();
     }
   }
+
+  // Set auto prediction enabled
+  setAutoPredictionEnabled(enabled) {
+    this.autoPredictionEnabled = enabled;
+    console.log(`🤖 Auto prediction ${enabled ? 'enabled' : 'disabled'}`);
+  }
+
+  // Set auto alert enabled
+  setAutoAlertEnabled(enabled) {
+    this.autoAlertEnabled = enabled;
+    console.log(`🔔 Auto alerts ${enabled ? 'enabled' : 'disabled'}`);
+  }
+
+  // Set risk threshold for notifications
+  setRiskThreshold(threshold) {
+    this.riskThreshold = threshold;
+    console.log(`📊 Risk threshold set to: ${threshold}`);
+  }
+
+  // Set consecutive high risk requirement
+  setConsecutiveHighRiskRequirement(count) {
+    this.requiredConsecutiveHighRisk = count;
+    console.log(`🔄 Consecutive high risk requirement set to: ${count}`);
+  }
+
+  // Get configuration
+  getConfiguration() {
+    return {
+      updateInterval: this.updateInterval,
+      autoPredictionEnabled: this.autoPredictionEnabled,
+      autoAlertEnabled: this.autoAlertEnabled,
+      riskThreshold: this.riskThreshold,
+      notificationCooldown: this.notificationCooldown,
+      requiredConsecutiveHighRisk: this.requiredConsecutiveHighRisk
+    };
+  }
+
+  // Update configuration
+  updateConfiguration(config) {
+    if (config.updateInterval) this.setUpdateInterval(config.updateInterval);
+    if (config.autoPredictionEnabled !== undefined) this.setAutoPredictionEnabled(config.autoPredictionEnabled);
+    if (config.autoAlertEnabled !== undefined) this.setAutoAlertEnabled(config.autoAlertEnabled);
+    if (config.riskThreshold) this.setRiskThreshold(config.riskThreshold);
+    if (config.notificationCooldown) this.notificationCooldown = config.notificationCooldown;
+    if (config.requiredConsecutiveHighRisk) this.setConsecutiveHighRiskRequirement(config.requiredConsecutiveHighRisk);
+    
+    console.log('⚙️ ThingSpeak configuration updated');
+  }
 }
 
-// Create singleton instance
-const thingSpeakService = new ThingSpeakService();
-
-export default thingSpeakService; 
+export default new ThingSpeakService(); 

@@ -246,6 +246,21 @@ class ApiService {
     return response.readings || response;
   }
 
+  // Prediction endpoints
+  async createPrediction(data) {
+    return this.post('/predictions/', data);
+  }
+
+  async getPredictions(params = {}) {
+    const response = await this.get('/predictions/', params);
+    return response.predictions || response;
+  }
+
+  async getLatestPrediction() {
+    const response = await this.get('/predictions/', { limit: 1, sort: 'created_at', order: 'desc' });
+    return response.predictions?.[0] || response;
+  }
+
   // Alert endpoints
   async getUserAlerts(params = {}) {
     const response = await this.get('/alerts/', params);

@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
+import { showSuccessToast, showErrorToast, showInfoToast } from '../services/toastService';
 
 const LocationSettingsScreen = ({ navigation }) => {
   const { colors } = useTheme();
@@ -72,14 +73,14 @@ const LocationSettingsScreen = ({ navigation }) => {
       setLocationEnabled(status === 'granted');
       
       if (status === 'granted') {
-        Alert.alert('Success', 'Location permission granted!');
+        showSuccessToast('Location permission granted!');
         getCurrentLocation();
       } else {
-        Alert.alert('Permission Denied', 'Location permission is required for fire risk predictions.');
+        showErrorToast('Location permission is required for fire risk predictions.');
       }
     } catch (error) {
       console.error('Error requesting location permission:', error);
-      Alert.alert('Error', 'Failed to request location permission.');
+      showErrorToast('Failed to request location permission.');
     } finally {
       setIsLoading(false);
     }
@@ -91,14 +92,16 @@ const LocationSettingsScreen = ({ navigation }) => {
         accuracy: Location.Accuracy.High,
       });
       setCurrentLocation(location);
+      showInfoToast('Current location updated successfully');
     } catch (error) {
       console.error('Error getting current location:', error);
+      showErrorToast('Failed to get current location');
     }
   };
 
   const handleSaveLocation = () => {
     if (!currentLocation) {
-      Alert.alert('No Location', 'Please enable location services to save your current location.');
+      showErrorToast('No current location available');
       return;
     }
 
@@ -113,8 +116,8 @@ const LocationSettingsScreen = ({ navigation }) => {
       isDefault: false
     };
 
-    setSavedLocations(prev => [...prev, newLocation]);
-    Alert.alert('Success', 'Current location saved!');
+    setSavedLocations([...savedLocations, newLocation]);
+    showSuccessToast('Location saved successfully!');
   };
 
   const handleDeleteLocation = (locationId) => {
@@ -123,11 +126,12 @@ const LocationSettingsScreen = ({ navigation }) => {
       'Are you sure you want to delete this location?',
       [
         { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
+        { 
+          text: 'Delete', 
           style: 'destructive',
           onPress: () => {
-            setSavedLocations(prev => prev.filter(loc => loc.id !== locationId));
+            setSavedLocations(savedLocations.filter(loc => loc.id !== locationId));
+            showSuccessToast('Location deleted successfully');
           }
         }
       ]
@@ -182,20 +186,18 @@ const LocationSettingsScreen = ({ navigation }) => {
   );
 
   const SavedLocationItem = ({ location, onDelete }) => (
-    <View style={[styles.savedLocationItem, { backgroundColor: colors.surface }]}>
+    <View style={[styles.savedLocationItem, { backgroundColor: colors.surface, shadowColor: colors.shadow }]}>
       <View style={styles.savedLocationContent}>
-        <View style={styles.locationHeader}>
-          <Text style={[styles.locationName, { color: colors.text }]}>{location.name}</Text>
+        <View style={styles.savedLocationHeader}>
+          <Text style={[styles.savedLocationName, { color: colors.text }]}>{location.name}</Text>
           {location.isDefault && (
             <View style={[styles.defaultBadge, { backgroundColor: colors.primary }]}>
-              <Text style={[styles.defaultText, { color: colors.surface }]}>Default</Text>
+              <Text style={[styles.defaultBadgeText, { color: colors.surface }]}>Default</Text>
             </View>
           )}
         </View>
-        <Text style={[styles.locationAddress, { color: colors.textSecondary }]}>
-          {location.address}
-        </Text>
-        <Text style={[styles.locationCoords, { color: colors.textLight }]}>
+        <Text style={[styles.savedLocationAddress, { color: colors.textSecondary }]}>{location.address}</Text>
+        <Text style={[styles.savedLocationCoords, { color: colors.textLight }]}>
           {location.coordinates.latitude.toFixed(4)}, {location.coordinates.longitude.toFixed(4)}
         </Text>
       </View>
@@ -203,8 +205,17 @@ const LocationSettingsScreen = ({ navigation }) => {
         style={[styles.deleteButton, { backgroundColor: colors.error + '20' }]}
         onPress={() => onDelete(location.id)}
       >
-        <Ionicons name="trash-outline" size={16} color={colors.error} />
+        <Ionicons name="trash-outline" size={20} color={colors.error} />
       </TouchableOpacity>
+    </View>
+  );
+
+  const SectionHeader = ({ title, subtitle }) => (
+    <View style={styles.sectionHeader}>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
+      {subtitle && (
+        <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text>
+      )}
     </View>
   );
 
@@ -220,36 +231,36 @@ const LocationSettingsScreen = ({ navigation }) => {
           </TouchableOpacity>
           <Text style={[styles.title, { color: colors.text }]}>Location Settings</Text>
         </View>
+
         {/* Location Permission */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>📍 Location Permission</Text>
-          
-          <View style={[styles.permissionCard, { backgroundColor: colors.surface }]}>
-            <View style={styles.permissionHeader}>
-              <Ionicons 
-                name={locationEnabled ? "checkmark-circle" : "close-circle"} 
-                size={24} 
-                color={locationEnabled ? colors.success : colors.error} 
-              />
-              <Text style={[styles.permissionStatus, { color: colors.text }]}>
-                {locationEnabled ? 'Location Enabled' : 'Location Disabled'}
-              </Text>
-            </View>
-            
-            {currentLocation && (
-              <View style={styles.currentLocationInfo}>
-                <Text style={[styles.currentLocationTitle, { color: colors.text }]}>Current Location:</Text>
-                <Text style={[styles.currentLocationText, { color: colors.textSecondary }]}>
-                  {currentLocation.coords.latitude.toFixed(4)}, {currentLocation.coords.longitude.toFixed(4)}
+          <SectionHeader 
+            title="📍 Location Permission" 
+            subtitle="Manage location access for fire risk predictions"
+          />
+          <View style={[styles.permissionCard, { backgroundColor: colors.surface, shadowColor: colors.shadow }]}>
+            <View style={styles.permissionContent}>
+              <View style={styles.permissionStatus}>
+                <Ionicons 
+                  name={locationEnabled ? "checkmark-circle" : "close-circle"} 
+                  size={24} 
+                  color={locationEnabled ? colors.lowRisk : colors.highRisk} 
+                />
+                <Text style={[styles.permissionText, { color: colors.text }]}>
+                  Location Access: {locationEnabled ? 'Enabled' : 'Disabled'}
                 </Text>
               </View>
-            )}
-            
+              {currentLocation && (
+                <Text style={[styles.locationText, { color: colors.textSecondary }]}>
+                  Current: {currentLocation.coords.latitude.toFixed(4)}, {currentLocation.coords.longitude.toFixed(4)}
+                </Text>
+              )}
+            </View>
             <TouchableOpacity
               style={[
                 styles.permissionButton,
                 { 
-                  backgroundColor: locationEnabled ? colors.success : colors.primary,
+                  backgroundColor: locationEnabled ? colors.primary : colors.highRisk,
                   opacity: isLoading ? 0.7 : 1
                 }
               ]}
@@ -259,11 +270,7 @@ const LocationSettingsScreen = ({ navigation }) => {
               {isLoading ? (
                 <ActivityIndicator size="small" color={colors.surface} />
               ) : (
-                <Ionicons 
-                  name={locationEnabled ? "refresh" : "location"} 
-                  size={20} 
-                  color={colors.surface} 
-                />
+                <Ionicons name={locationEnabled ? "refresh" : "location"} size={20} color={colors.surface} />
               )}
               <Text style={[styles.permissionButtonText, { color: colors.surface }]}>
                 {isLoading ? 'Loading...' : (locationEnabled ? 'Update Location' : 'Enable Location')}
@@ -274,17 +281,10 @@ const LocationSettingsScreen = ({ navigation }) => {
 
         {/* Saved Locations */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>💾 Saved Locations</Text>
-            <TouchableOpacity
-              style={[styles.addButton, { backgroundColor: colors.primary }]}
-              onPress={handleSaveLocation}
-            >
-              <Ionicons name="add" size={16} color={colors.surface} />
-              <Text style={[styles.addButtonText, { color: colors.surface }]}>Add</Text>
-            </TouchableOpacity>
-          </View>
-          
+          <SectionHeader 
+            title="💾 Saved Locations" 
+            subtitle="Manage your saved locations for quick access"
+          />
           {savedLocations.map(location => (
             <SavedLocationItem 
               key={location.id} 
@@ -292,28 +292,39 @@ const LocationSettingsScreen = ({ navigation }) => {
               onDelete={handleDeleteLocation}
             />
           ))}
+          {currentLocation && (
+            <TouchableOpacity
+              style={[styles.saveLocationButton, { backgroundColor: colors.primary }]}
+              onPress={handleSaveLocation}
+            >
+              <Ionicons name="add-circle-outline" size={20} color={colors.surface} />
+              <Text style={[styles.saveLocationButtonText, { color: colors.surface }]}>
+                Save Current Location
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Location Settings */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>⚙️ Location Settings</Text>
-          
+          <SectionHeader 
+            title="⚙️ Location Settings" 
+            subtitle="Customize location-related features"
+          />
           <LocationItem
             icon="location-outline"
             title="Background Location"
-            subtitle="Track location even when app is closed"
+            subtitle="Track location in background for alerts"
             value={locationSettings.backgroundLocation}
             onToggle={() => handleToggleSetting('backgroundLocation')}
           />
-          
           <LocationItem
             icon="compass-outline"
             title="High Accuracy"
-            subtitle="Use GPS for precise location tracking"
+            subtitle="Use high accuracy GPS for better predictions"
             value={locationSettings.highAccuracy}
             onToggle={() => handleToggleSetting('highAccuracy')}
           />
-          
           <LocationItem
             icon="time-outline"
             title="Location History"
@@ -321,7 +332,6 @@ const LocationSettingsScreen = ({ navigation }) => {
             value={locationSettings.locationHistory}
             onToggle={() => handleToggleSetting('locationHistory')}
           />
-          
           <LocationItem
             icon="share-outline"
             title="Location Sharing"
@@ -329,28 +339,20 @@ const LocationSettingsScreen = ({ navigation }) => {
             value={locationSettings.locationSharing}
             onToggle={() => handleToggleSetting('locationSharing')}
           />
-        </View>
-
-        {/* Location-Based Features */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>🎯 Location Features</Text>
-          
           <LocationItem
             icon="warning-outline"
             title="Emergency Location"
-            subtitle="Share location during emergencies"
+            subtitle="Automatically share location during emergencies"
             value={locationSettings.emergencyLocation}
             onToggle={() => handleToggleSetting('emergencyLocation')}
           />
-          
           <LocationItem
             icon="cloudy-outline"
             title="Weather Updates"
-            subtitle="Get weather updates for your location"
+            subtitle="Receive weather updates for your location"
             value={locationSettings.weatherUpdates}
             onToggle={() => handleToggleSetting('weatherUpdates')}
           />
-          
           <LocationItem
             icon="flame-outline"
             title="Fire Risk Alerts"
@@ -358,19 +360,6 @@ const LocationSettingsScreen = ({ navigation }) => {
             value={locationSettings.fireRiskAlerts}
             onToggle={() => handleToggleSetting('fireRiskAlerts')}
           />
-        </View>
-
-        {/* Location Accuracy Info */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>ℹ️ Location Information</Text>
-          
-          <View style={[styles.infoCard, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.infoTitle, { color: colors.text }]}>Why Location Access?</Text>
-            <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-              Location access helps us provide accurate fire risk predictions for your area, 
-              send relevant alerts, and improve the accuracy of our predictions.
-            </Text>
-          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -390,14 +379,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 15,
-    backgroundColor: 'transparent', // Ensure it doesn't interfere with SafeAreaView
   },
   backButton: {
     padding: 8,
     marginRight: 10,
   },
   title: {
-    ...typography.h4,
+    ...typography.h2,
     fontWeight: 'bold',
   },
   section: {
@@ -405,57 +393,48 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: 16,
   },
   sectionTitle: {
     ...typography.h3,
+    marginBottom: 4,
   },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  addButtonText: {
+  sectionSubtitle: {
     ...typography.caption,
-    fontWeight: '600',
-    marginLeft: 4,
   },
   permissionCard: {
     borderRadius: 12,
     padding: 16,
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  permissionContent: {
     marginBottom: 16,
   },
-  permissionHeader: {
+  permissionStatus: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
-  permissionStatus: {
+  permissionText: {
     ...typography.body1,
     fontWeight: '600',
     marginLeft: 8,
   },
-  currentLocationInfo: {
-    marginBottom: 16,
-  },
-  currentLocationTitle: {
+  locationText: {
     ...typography.body2,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  currentLocationText: {
-    ...typography.caption,
+    marginLeft: 32,
   },
   permissionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
   },
   permissionButtonText: {
@@ -513,52 +492,52 @@ const styles = StyleSheet.create({
   savedLocationContent: {
     flex: 1,
   },
-  locationHeader: {
+  savedLocationHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 4,
   },
-  locationName: {
+  savedLocationName: {
     ...typography.body1,
     fontWeight: '600',
     marginRight: 8,
   },
   defaultBadge: {
-    borderRadius: 4,
-    paddingHorizontal: 6,
+    borderRadius: 8,
+    paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  defaultText: {
+  defaultBadgeText: {
     ...typography.caption,
     fontWeight: '600',
   },
-  locationAddress: {
+  savedLocationAddress: {
     ...typography.body2,
     marginBottom: 2,
   },
-  locationCoords: {
+  savedLocationCoords: {
     ...typography.caption,
   },
   deleteButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 12,
   },
-  infoCard: {
+  saveLocationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
+    marginTop: 8,
   },
-  infoTitle: {
-    ...typography.body1,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  infoText: {
+  saveLocationButtonText: {
     ...typography.body2,
-    lineHeight: 20,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });
 
