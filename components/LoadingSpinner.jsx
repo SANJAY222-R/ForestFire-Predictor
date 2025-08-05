@@ -1,16 +1,10 @@
 import React, { useContext } from 'react';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
-import { ThemeContext } from '../theme/ThemeContext';
+import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
 
-const LoadingSpinner = ({ 
-  size = 'large', 
-  color = null, 
-  text = 'Loading...', 
-  containerStyle = {},
-  textStyle = {} 
-}) => {
-  const { colors } = useContext(ThemeContext);
+const LoadingSpinner = ({ text = 'Loading...', size = 'large' }) => {
+  const { colors } = useTheme();
   
   const spinnerColor = color || colors.primary;
 

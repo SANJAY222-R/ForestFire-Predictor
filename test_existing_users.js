@@ -1,7 +1,7 @@
 // Test script to verify existing user data update functionality
 // Run this after starting the backend server
 
-const API_BASE_URL = 'http://10.78.111.191:5000/api';
+const API_BASE_URL = 'http://10.156.51.191:5000/api';
 
 async function testExistingUsers() {
   console.log('🧪 Testing existing user data update functionality...');

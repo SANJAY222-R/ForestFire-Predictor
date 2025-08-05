@@ -1,7 +1,7 @@
 // Test script to verify correct user profile display
 // Run this after starting the backend server
 
-const API_BASE_URL = 'http://10.78.111.191:5000/api';
+const API_BASE_URL = 'http://10.156.51.191:5000/api';
 
 async function testCorrectUserProfile() {
   console.log('🧪 Testing correct user profile display...');

@@ -1,22 +1,24 @@
-import React, { useContext } from "react";
-import { createDrawerNavigator } from "@react-navigation/drawer";
-import { ThemeContext } from "../theme/ThemeContext";
-
-// Import screens
-import HomeScreen from "../screens/HomeScreen";
-import PredictionInputScreen from "../screens/PredictionInputScreen";
-import ResultsScreen from "../screens/ResultsScreen";
-import ProfileScreen from "../screens/ProfileScreen";
-import SettingsScreen from "../screens/SettingsScreen";
-import AIChatbotScreen from "../screens/AIChatbotScreen";
+import React, { useContext } from 'react';
+import { createDrawerNavigator } from '@react-navigation/drawer';
+import { useTheme } from '../theme/ThemeContext';
+import HomeScreen from '../screens/HomeScreen';
+import PredictionInputScreen from '../screens/PredictionInputScreen';
+import ResultsScreen from '../screens/ResultsScreen';
+import AIChatbotScreen from '../screens/AIChatbotScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
+import AccountSettingsScreen from "../screens/AccountSettingsScreen";
+import NotificationPreferencesScreen from "../screens/NotificationPreferencesScreen";
+import LocationSettingsScreen from "../screens/LocationSettingsScreen";
+import HelpSupportScreen from "../screens/HelpSupportScreen";
 import CustomDrawerContent from './CustomDrawerContent';
 
 const Drawer = createDrawerNavigator();
 
 export default function DrawerNavigator() {
-  const { colors } = useContext(ThemeContext);
+  const { colors } = useTheme();
 
   return (
     <Drawer.Navigator
@@ -103,6 +105,38 @@ export default function DrawerNavigator() {
         component={SignupScreen}
         options={{
           headerShown: false,
+        }}
+      />
+      <Drawer.Screen
+        name="AccountSettings"
+        component={AccountSettingsScreen}
+        options={{
+          title: "Account Settings",
+          headerShown: true,
+        }}
+      />
+      <Drawer.Screen
+        name="NotificationPreferences"
+        component={NotificationPreferencesScreen}
+        options={{
+          title: "Notification Preferences",
+          headerShown: true,
+        }}
+      />
+      <Drawer.Screen
+        name="LocationSettings"
+        component={LocationSettingsScreen}
+        options={{
+          title: "Location Settings",
+          headerShown: true,
+        }}
+      />
+      <Drawer.Screen
+        name="HelpSupport"
+        component={HelpSupportScreen}
+        options={{
+          title: "Help & Support",
+          headerShown: true,
         }}
       />
     </Drawer.Navigator>

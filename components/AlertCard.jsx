@@ -1,11 +1,11 @@
 import React, { useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
 
-const AlertCard = ({ alert, onPress = null }) => {
-  const { colors } = useContext(ThemeContext);
+const AlertCard = ({ alert, onPress }) => {
+  const { colors } = useTheme();
 
   const getAlertIcon = (type) => {
     switch (type) {

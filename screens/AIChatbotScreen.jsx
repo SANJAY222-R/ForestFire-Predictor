@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useContext } from "react";
+import React, { useState, useContext, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,17 +8,18 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Animated,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
-import { useHeaderHeight } from "@react-navigation/elements";
-
-import { ThemeContext } from "../theme/ThemeContext";
-import { typography } from "../theme/typography";
-//import Config from "react-native-config";
-// import { GEMINI_API_KEY } from "@env";
-// import Constants from "expo-constants";
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@clerk/clerk-expo';
+import { useTheme } from '../theme/ThemeContext';
+import { typography } from '../theme/typography';
+import LoadingSpinner from '../components/LoadingSpinner';
+import ErrorMessage from '../components/ErrorMessage';
+import NetworkStatus from '../components/NetworkStatus';
+import apiService from '../services/api';
 
 const AIChatbotScreen = () => {
   const { colors } = useContext(ThemeContext);

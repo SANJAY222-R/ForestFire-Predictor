@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import { useAuth } from '@clerk/clerk-expo';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
 import { useUserSync } from '../hooks/useUserSync';
@@ -11,7 +11,7 @@ export function AuthGate({ children }) {
   const { syncUser } = useUserSync();
   const [showSignup, setShowSignup] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const { colors } = useContext(ThemeContext);
+  const { colors } = useTheme();
 
   // Auto-sync user when they sign in
   useEffect(() => {

@@ -1,8 +1,8 @@
-import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, FlatList, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
 import RiskBadge from '../components/RiskBadge';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -11,7 +11,7 @@ import { useUserPredictions, usePredictionStats } from '../hooks/useApi';
 import { RISK_LEVELS } from '../utils/constants';
 
 const ResultsScreen = () => {
-  const { colors } = useContext(ThemeContext);
+  const { colors } = useTheme();
   const [selectedRiskLevel, setSelectedRiskLevel] = useState('all');
   const [selectedTimeRange, setSelectedTimeRange] = useState('all');
 
@@ -21,6 +21,97 @@ const ResultsScreen = () => {
   });
 
   const { data: stats } = usePredictionStats();
+
+  // Get fire occurrence alerts (high and critical risk predictions)
+  const fireOccurrenceAlerts = predictions?.filter(pred => 
+    pred.risk_level === 'high' || pred.risk_level === 'critical'
+  ) || [];
+
+  const renderFireAlert = ({ item }) => (
+    <View style={[styles.fireAlertCard, { 
+      backgroundColor: item.risk_level === 'critical' ? colors.error + '20' : colors.highRisk + '20',
+      borderColor: item.risk_level === 'critical' ? colors.error : colors.highRisk
+    }]}>
+      <View style={styles.alertHeader}>
+        <View style={styles.alertIconContainer}>
+          <Ionicons 
+            name={item.risk_level === 'critical' ? 'warning' : 'flame'} 
+            size={24} 
+            color={item.risk_level === 'critical' ? colors.error : colors.highRisk} 
+          />
+        </View>
+        <View style={styles.alertTitleContainer}>
+          <Text style={[styles.alertTitle, { 
+            color: item.risk_level === 'critical' ? colors.error : colors.highRisk 
+          }]}>
+            {item.risk_level === 'critical' ? '🚨 CRITICAL FIRE RISK' : '🔥 HIGH FIRE RISK'}
+          </Text>
+          <Text style={[styles.alertTime, { color: colors.textSecondary }]}>
+            {new Date(item.created_at).toLocaleString()}
+          </Text>
+        </View>
+        <RiskBadge riskLevel={item.risk_level} />
+      </View>
+
+      <View style={styles.alertContent}>
+        <Text style={[styles.alertMessage, { color: colors.text }]}>
+          {item.risk_level === 'critical' 
+            ? '⚠️ CRITICAL: Immediate fire risk detected! Take immediate action to prevent fire outbreak.'
+            : '🔥 HIGH: Elevated fire risk conditions detected. Monitor closely and take preventive measures.'
+          }
+        </Text>
+
+        <View style={styles.alertValues}>
+          <View style={styles.alertValueItem}>
+            <Ionicons name="thermometer-outline" size={16} color={colors.highRisk} />
+            <Text style={[styles.alertValueLabel, { color: colors.textSecondary }]}>Temp:</Text>
+            <Text style={[styles.alertValueText, { color: colors.highRisk }]}>{item.temperature}°C</Text>
+          </View>
+          
+          <View style={styles.alertValueItem}>
+            <Ionicons name="water-outline" size={16} color={colors.highRisk} />
+            <Text style={[styles.alertValueLabel, { color: colors.textSecondary }]}>Humidity:</Text>
+            <Text style={[styles.alertValueText, { color: colors.highRisk }]}>{item.humidity}%</Text>
+          </View>
+          
+          <View style={styles.alertValueItem}>
+            <Ionicons name="cloud-outline" size={16} color={colors.highRisk} />
+            <Text style={[styles.alertValueLabel, { color: colors.textSecondary }]}>Smoke:</Text>
+            <Text style={[styles.alertValueText, { color: colors.highRisk }]}>{item.smoke_level}ppm</Text>
+          </View>
+        </View>
+
+        {item.recommendations && item.recommendations.length > 0 && (
+          <View style={styles.recommendationsContainer}>
+            <Text style={[styles.recommendationsTitle, { color: colors.text }]}>
+              🚨 Immediate Actions Required:
+            </Text>
+            {item.recommendations.slice(0, 3).map((rec, index) => (
+              <Text key={index} style={[styles.recommendationItem, { color: colors.textSecondary }]}>
+                • {rec.title || rec}
+              </Text>
+            ))}
+          </View>
+        )}
+
+        <View style={styles.alertFooter}>
+          <Text style={[styles.confidenceText, { color: colors.textSecondary }]}>
+            Confidence: {(item.confidence_score * 100).toFixed(1)}%
+          </Text>
+          <TouchableOpacity 
+            style={[styles.detailsButton, { backgroundColor: colors.primary }]}
+            onPress={() => Alert.alert(
+              'Fire Risk Details',
+              `Risk Level: ${item.risk_level.toUpperCase()}\nTemperature: ${item.temperature}°C\nHumidity: ${item.humidity}%\nSmoke Level: ${item.smoke_level}ppm\nConfidence: ${(item.confidence_score * 100).toFixed(1)}%\n\n${item.recommendations?.join('\n') || 'No specific recommendations available'}`,
+              [{ text: 'OK' }]
+            )}
+          >
+            <Text style={[styles.detailsButtonText, { color: colors.surface }]}>View Details</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
 
   const renderPredictionCard = ({ item }) => (
     <View style={[styles.predictionCard, { backgroundColor: colors.surface, shadowColor: colors.shadow }]}>
@@ -143,6 +234,26 @@ const ResultsScreen = () => {
           </Text>
         </View>
 
+        {/* Fire Occurrence Alerts */}
+        {fireOccurrenceAlerts.length > 0 && (
+          <View style={styles.alertsSection}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              🚨 Fire Occurrence Alerts ({fireOccurrenceAlerts.length})
+            </Text>
+            <Text style={[styles.alertSubtitle, { color: colors.textSecondary }]}>
+              High and critical risk predictions that require immediate attention
+            </Text>
+            
+            <FlatList
+              data={fireOccurrenceAlerts}
+              renderItem={renderFireAlert}
+              keyExtractor={(item) => `alert-${item.id}`}
+              scrollEnabled={false}
+              showsVerticalScrollIndicator={false}
+            />
+          </View>
+        )}
+
         {/* Statistics */}
         {stats && (
           <View style={styles.statsSection}>
@@ -235,7 +346,7 @@ const ResultsScreen = () => {
         <View style={styles.predictionsSection}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              📋 Predictions ({predictionHistory.length})
+              📋 All Predictions ({predictionHistory.length})
             </Text>
             <TouchableOpacity onPress={refetch} style={styles.refreshButton}>
               <Ionicons name="refresh" size={20} color={colors.primary} />
@@ -452,6 +563,109 @@ const styles = StyleSheet.create({
   emptyText: {
     ...typography.body2,
     textAlign: 'center',
+  },
+  // New styles for fire alerts
+  alertsSection: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  alertSubtitle: {
+    ...typography.body2,
+    marginBottom: 12,
+  },
+  fireAlertCard: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+  },
+  alertHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  alertIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  alertTitleContainer: {
+    flex: 1,
+  },
+  alertTitle: {
+    ...typography.h4,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  alertTime: {
+    ...typography.caption,
+  },
+  alertContent: {
+    marginTop: 8,
+  },
+  alertMessage: {
+    ...typography.body2,
+    marginBottom: 12,
+  },
+  alertValues: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  alertValueItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  alertValueLabel: {
+    ...typography.body2,
+    marginLeft: 8,
+    marginRight: 8,
+  },
+  alertValueText: {
+    ...typography.body2,
+    fontWeight: '600',
+  },
+  recommendationsContainer: {
+    marginTop: 8,
+  },
+  recommendationsTitle: {
+    ...typography.caption,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  recommendationItem: {
+    ...typography.caption,
+    marginLeft: 8,
+    marginBottom: 2,
+  },
+  alertFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  confidenceText: {
+    ...typography.caption,
+    fontStyle: 'italic',
+  },
+  detailsButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  detailsButtonText: {
+    ...typography.caption,
+    fontWeight: '600',
   },
 });
 

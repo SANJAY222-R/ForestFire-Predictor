@@ -10,7 +10,7 @@ import {
 import { DrawerItem } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@clerk/clerk-expo';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
 
 const menuItems = [
@@ -60,7 +60,7 @@ const menuItems = [
 
 export default function CustomDrawerContent(props) {
   const { isSignedIn, signOut, user } = useAuth();
-  const { colors } = useContext(ThemeContext);
+  const { colors } = useTheme();
   const { state, navigation } = props;
 
   const handleNavigation = (routeName) => {

@@ -1,7 +1,7 @@
 // Test script to verify profile display functionality
 // Run this after starting the backend server
 
-const API_BASE_URL = 'http://10.78.111.191:5000/api';
+const API_BASE_URL = 'http://10.156.51.191:5000/api';
 
 async function testProfileDisplay() {
   console.log('🧪 Testing profile display functionality...');

@@ -1,17 +1,11 @@
 import React, { useContext } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
 
-const ErrorMessage = ({ 
-  error, 
-  onRetry = null, 
-  title = 'Error',
-  containerStyle = {},
-  showIcon = true 
-}) => {
-  const { colors } = useContext(ThemeContext);
+const ErrorMessage = ({ error, onRetry, title = 'Error' }) => {
+  const { colors } = useTheme();
 
   if (!error) return null;
 

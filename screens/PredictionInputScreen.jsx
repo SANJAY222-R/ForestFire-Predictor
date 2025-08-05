@@ -1,26 +1,28 @@
-import React, { useState, useContext } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TextInput, 
-  TouchableOpacity, 
-  Animated,
-  Alert 
+import React, { useContext, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useAuth } from '@clerk/clerk-expo';
+import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
-import RiskBadge from '../components/RiskBadge';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
-import { useCreatePrediction } from '../hooks/useApi';
+import apiService from '../services/api';
+import RiskBadge from '../components/RiskBadge';
 import { VALIDATION_RULES, DEFAULT_VALUES, RISK_LEVELS } from '../utils/constants';
 
-const PredictionInputScreen = () => {
-  const { colors } = useContext(ThemeContext);
+const PredictionInputScreen = ({ navigation }) => {
+  const { colors } = useTheme();
   const [temperature, setTemperature] = useState('');
   const [humidity, setHumidity] = useState('');
   const [smokeLevel, setSmokeLevel] = useState('');
@@ -222,6 +224,12 @@ const PredictionInputScreen = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
           <Text style={[styles.title, { color: colors.text }]}>Fire Risk Prediction</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Enter current sensor readings to assess fire risk
@@ -449,6 +457,12 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     paddingBottom: 10,
+  },
+  backButton: {
+    position: 'absolute',
+    left: 10,
+    top: 10,
+    zIndex: 1,
   },
   title: {
     ...typography.h2,

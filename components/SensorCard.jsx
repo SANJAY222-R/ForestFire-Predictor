@@ -1,11 +1,11 @@
 import React, { useContext } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
 
 const SensorCard = ({ icon, title, value, unit, recommendation, riskLevel }) => {
-  const { colors } = useContext(ThemeContext);
+  const { colors } = useTheme();
 
   const getRiskColor = () => {
     switch (riskLevel) {

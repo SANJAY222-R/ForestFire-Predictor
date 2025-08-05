@@ -1,25 +1,26 @@
-import React, { useState, useContext } from "react";
-import { 
-  View, 
-  TextInput, 
-  StyleSheet, 
-  Text, 
-  Alert, 
-  TouchableOpacity, 
-  SafeAreaView,
+import React, { useState, useContext } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useSignIn } from "@clerk/clerk-expo";
-import { ThemeContext } from "../theme/ThemeContext";
-import { typography } from "../theme/typography";
-import { useUserSync } from "../hooks/useUserSync";
+  ScrollView,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@clerk/clerk-expo';
+import { useTheme } from '../theme/ThemeContext';
+import { typography } from '../theme/typography';
+import LoadingSpinner from '../components/LoadingSpinner';
+import ErrorMessage from '../components/ErrorMessage';
 
-export default function LoginScreen({ switchToSignup }) {
-  const { colors } = useContext(ThemeContext);
-  const { signIn, setActive, isLoaded } = useSignIn();
+const LoginScreen = ({ switchToSignup }) => {
+  const { colors } = useTheme();
+  const { signIn, setActive, isLoaded } = useAuth();
   const { syncUser } = useUserSync();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

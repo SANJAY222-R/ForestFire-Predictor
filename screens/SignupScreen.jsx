@@ -1,27 +1,26 @@
-import React, { useState, useContext } from "react";
-import { 
-  View, 
-  TextInput, 
-  StyleSheet, 
-  Text, 
-  Alert, 
-  TouchableOpacity, 
-  SafeAreaView,
+import React, { useState, useContext } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useSignUp } from "@clerk/clerk-expo";
-import { useNavigation } from "@react-navigation/native";
-import { ThemeContext } from "../theme/ThemeContext";
-import { typography } from "../theme/typography";
-import { useUserSync } from "../hooks/useUserSync";
+  ScrollView,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@clerk/clerk-expo';
+import { useTheme } from '../theme/ThemeContext';
+import { typography } from '../theme/typography';
+import LoadingSpinner from '../components/LoadingSpinner';
+import ErrorMessage from '../components/ErrorMessage';
 
-export default function SignupScreen({ switchToLogin }) {
-  const { colors } = useContext(ThemeContext);
-  const { signUp, setActive, isLoaded } = useSignUp();
-  const { syncUser } = useUserSync();
+const SignupScreen = ({ switchToLogin }) => {
+  const { colors } = useTheme();
+  const { signUp, setActive, isLoaded } = useAuth();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,7 +28,6 @@ export default function SignupScreen({ switchToLogin }) {
   const [verifying, setVerifying] = useState(false);
   const [code, setCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const navigation = useNavigation();
 
   const handleSignup = async () => {
     if (!isLoaded) return;
@@ -66,7 +64,7 @@ export default function SignupScreen({ switchToLogin }) {
       console.log("📝 Actual user input:", { username, email });
       try {
         // Pass the actual user input to sync
-        await syncUser({ username, email });
+        // await syncUser({ username, email }); // This line was removed as per the new_code
         console.log("✅ User synced successfully with real data");
       } catch (syncError) {
         console.error("❌ Sync failed but continuing:", syncError);
@@ -74,10 +72,10 @@ export default function SignupScreen({ switchToLogin }) {
       }
       
       console.log("🔄 Navigating to home screen...");
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "HomeScreen" }],
-      });
+      // navigation.reset({ // This line was removed as per the new_code
+      //   index: 0,
+      //   routes: [{ name: "HomeScreen" }],
+      // });
       console.log("✅ Navigation completed");
     } catch (err) {
       console.error("❌ Verification/sync error:", err);

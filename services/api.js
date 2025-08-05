@@ -3,7 +3,7 @@ import { getNetworkErrorMessage } from '../utils/networkUtils';
 
 // API Configuration - Use the correct IP address for mobile development
 const API_BASE_URL = __DEV__ 
-  ? 'http://10.78.111.191:5000/api'  // Development - use your computer's IP address
+  ? 'http://10.156.51.191:5000/api'  // Development - use your computer's IP address
   : 'https://your-production-api.com/api'; // Production
 
 // Fallback data for when API is not available
@@ -271,8 +271,20 @@ class ApiService {
     return this.get('/predictions/ml/info');
   }
 
-  async trainMLModel() {
-    return this.post('/predictions/ml/train');
+  async trainMLModel(params = {}) {
+    return this.post('/predictions/ml/train', params);
+  }
+
+  async evaluateMLModel(params = {}) {
+    return this.get('/predictions/ml/evaluate', params);
+  }
+
+  async getModelPerformance() {
+    return this.get('/predictions/ml/performance');
+  }
+
+  async retrainMLModel(params = {}) {
+    return this.post('/predictions/ml/retrain', params);
   }
 
   // Alert endpoints
@@ -342,6 +354,19 @@ class ApiService {
       
       throw error;
     }
+  }
+
+  // ThingSpeak endpoints
+  async fetchThingSpeakData() {
+    return this.get('/sensors/thingspeak/fetch');
+  }
+
+  async syncThingSpeakData(params = {}) {
+    return this.post('/sensors/thingspeak/sync', params);
+  }
+
+  async getThingSpeakStatus() {
+    return this.get('/sensors/thingspeak/status');
   }
 }
 

@@ -1,19 +1,13 @@
-import React, { useState, useContext } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Switch,
-  TouchableOpacity,
-} from 'react-native';
+import React, { useContext } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useAuth } from '@clerk/clerk-expo';
+import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
 
 const SettingsScreen = () => {
-  const { isDark, toggleTheme, colors } = useContext(ThemeContext);
+  const { isDark, toggleTheme, colors } = useTheme();
 
   const [alertsEnabled, setAlertsEnabled] = useState(true);
   const [maintenanceNotifications, setMaintenanceNotifications] = useState(true);

@@ -1,26 +1,16 @@
-import React, { useContext, useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
-  Alert, 
-  RefreshControl,
-  ActivityIndicator 
-} from 'react-native';
+import React, { useContext } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useUser, useAuth } from '@clerk/clerk-expo';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
-import { useUserProfile } from '../hooks/useUserProfile';
-import { useUserSync } from '../hooks/useUserSync';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
+import { useUserProfile } from '../hooks/useUserProfile';
 
-const ProfileScreen = () => {
-  const { colors } = useContext(ThemeContext);
+const ProfileScreen = ({ navigation }) => {
+  const { colors } = useTheme();
   const { user, isLoaded, isSignedIn } = useUser();
   const { signOut } = useAuth();
   const { profileData, loading, error, refetch } = useUserProfile();
@@ -344,22 +334,22 @@ const ProfileScreen = () => {
           <ProfileButton
             icon="settings-outline"
             title="Account Settings"
-            onPress={() => Alert.alert('Settings', 'Account settings coming soon!')}
+            onPress={() => navigation.navigate('AccountSettings')}
           />
           <ProfileButton
             icon="notifications-outline"
             title="Notification Preferences"
-            onPress={() => Alert.alert('Notifications', 'Notification settings coming soon!')}
+            onPress={() => navigation.navigate('NotificationPreferences')}
           />
           <ProfileButton
             icon="location-outline"
             title="Location Settings"
-            onPress={() => Alert.alert('Location', 'Location settings coming soon!')}
+            onPress={() => navigation.navigate('LocationSettings')}
           />
           <ProfileButton
             icon="help-circle-outline"
             title="Help & Support"
-            onPress={() => Alert.alert('Help', 'Help and support coming soon!')}
+            onPress={() => navigation.navigate('HelpSupport')}
           />
         </View>
 

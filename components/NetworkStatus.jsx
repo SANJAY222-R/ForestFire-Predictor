@@ -1,28 +1,11 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import React, { useContext } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
-import apiService from '../services/api';
 
-const NetworkStatus = () => {
-  const { colors } = useContext(ThemeContext);
-  const [isConnected, setIsConnected] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const testConnection = async () => {
-    setIsLoading(true);
-    try {
-      await apiService.healthCheck();
-      setIsConnected(true);
-      Alert.alert('Success', 'Backend server is reachable!');
-    } catch (error) {
-      setIsConnected(false);
-      Alert.alert('Connection Failed', error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+const NetworkStatus = ({ isConnected, lastUpdate }) => {
+  const { colors } = useTheme();
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
