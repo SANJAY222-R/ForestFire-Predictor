@@ -2,13 +2,9 @@ import React, { useContext } from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { useTheme } from '../theme/ThemeContext';
 import HomeScreen from '../screens/HomeScreen';
-import PredictionInputScreen from '../screens/PredictionInputScreen';
-import ResultsScreen from '../screens/ResultsScreen';
 import AIChatbotScreen from '../screens/AIChatbotScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
-import LoginScreen from '../screens/LoginScreen';
-import SignupScreen from '../screens/SignupScreen';
 import AccountSettingsScreen from "../screens/AccountSettingsScreen";
 import NotificationPreferencesScreen from "../screens/NotificationPreferencesScreen";
 import LocationSettingsScreen from "../screens/LocationSettingsScreen";
@@ -19,29 +15,38 @@ const Drawer = createDrawerNavigator();
 
 export default function DrawerNavigator() {
   const { colors } = useTheme();
+  
+  // Fallback colors in case theme context is not available
+  const fallbackColors = {
+    primary: '#FFA500',
+    background: '#FFF8DC',
+    surface: '#FFFFFF',
+  };
+
+  const safeColors = colors || fallbackColors;
 
   return (
     <Drawer.Navigator
       drawerContent={props => <CustomDrawerContent {...props} />}
       screenOptions={{
         headerStyle: {
-          backgroundColor: colors.primary,
+          backgroundColor: safeColors.primary,
           elevation: 0,
           shadowOpacity: 0,
         },
-        headerTintColor: colors.surface,
+        headerTintColor: safeColors.surface,
         headerTitleStyle: {
           fontWeight: "600",
           fontSize: 18,
         },
         drawerStyle: {
-          backgroundColor: colors.background,
+          backgroundColor: safeColors.background,
           width: 320,
         },
         drawerType: 'front',
         overlayColor: 'rgba(0, 0, 0, 0.5)',
         sceneContainerStyle: {
-          backgroundColor: colors.background,
+          backgroundColor: safeColors.background,
         },
       }}
     >
@@ -50,22 +55,6 @@ export default function DrawerNavigator() {
         component={HomeScreen}
         options={{
           title: "Dashboard",
-          headerShown: true,
-        }}
-      />
-      <Drawer.Screen
-        name="PredictionInput"
-        component={PredictionInputScreen}
-        options={{
-          title: "Fire Risk Prediction",
-          headerShown: true,
-        }}
-      />
-      <Drawer.Screen
-        name="Results"
-        component={ResultsScreen}
-        options={{
-          title: "Prediction History",
           headerShown: true,
         }}
       />
@@ -91,20 +80,6 @@ export default function DrawerNavigator() {
         options={{
           title: "Settings",
           headerShown: true,
-        }}
-      />
-      <Drawer.Screen 
-        name="Login" 
-        component={LoginScreen}
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Drawer.Screen 
-        name="Signup" 
-        component={SignupScreen}
-        options={{
-          headerShown: false,
         }}
       />
       <Drawer.Screen

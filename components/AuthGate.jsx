@@ -13,28 +13,27 @@ export function AuthGate({ children }) {
   const [syncing, setSyncing] = useState(false);
   const { colors } = useTheme();
 
+  // Fallback colors in case theme context is not available
+  const fallbackColors = {
+    background: '#FFF8DC',
+    primary: '#FFA500',
+    text: '#000000',
+  };
+
+  const safeColors = colors || fallbackColors;
+
   // Auto-sync user when they sign in
   useEffect(() => {
     if (isLoaded && isSignedIn && user) {
-      console.log("🔄 AuthGate: Auto-syncing user...");
-      console.log("👤 AuthGate: User info:", {
-        id: user.id,
-        email: user.emailAddresses?.[0]?.emailAddress,
-        firstName: user.firstName,
-        lastName: user.lastName
-      });
-      console.log("🔧 AuthGate: This will update existing users with latest data");
       setSyncing(true);
       syncUser()
         .then(() => {
-          console.log("✅ AuthGate: User synced successfully");
-          console.log("🎯 Existing users will now have their data updated!");
+          // User synced successfully
         })
         .catch((error) => {
-          console.error("❌ AuthGate: Sync failed:", error);
+          console.error('AuthGate: Sync failed:', error);
         })
         .finally(() => {
-          console.log("🏁 AuthGate: Sync process finished");
           setSyncing(false);
         });
     }
@@ -42,8 +41,8 @@ export function AuthGate({ children }) {
 
   if (!isLoaded) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: safeColors.background }}>
+        <ActivityIndicator size="large" color={safeColors.primary} />
       </View>
     );
   }
@@ -59,9 +58,9 @@ export function AuthGate({ children }) {
   // Show loading while syncing
   if (syncing) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={{ marginTop: 16, color: colors.text }}>Syncing user data...</Text>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: safeColors.background }}>
+        <ActivityIndicator size="large" color={safeColors.primary} />
+        <Text style={{ marginTop: 16, color: safeColors.text }}>Syncing user data...</Text>
       </View>
     );
   }

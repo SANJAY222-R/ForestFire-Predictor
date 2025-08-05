@@ -22,20 +22,6 @@ const menuItems = [
     route: 'Home'
   },
   {
-    name: 'PredictionInput',
-    icon: 'flame-outline',
-    activeIcon: 'flame',
-    label: 'Fire Risk Prediction',
-    route: 'PredictionInput'
-  },
-  {
-    name: 'Results',
-    icon: 'analytics-outline',
-    activeIcon: 'analytics',
-    label: 'Prediction History',
-    route: 'Results'
-  },
-  {
     name: 'AIChatbot',
     icon: 'chatbubble-outline',
     activeIcon: 'chatbubble',
@@ -63,6 +49,20 @@ export default function CustomDrawerContent(props) {
   const { colors } = useTheme();
   const { state, navigation } = props;
 
+  // Fallback colors in case theme context is not available
+  const fallbackColors = {
+    background: '#FFF8DC',
+    primary: '#FFA500',
+    surface: '#FFFFFF',
+    text: '#000000',
+    textSecondary: '#666666',
+    textLight: '#999999',
+    error: '#FF4444',
+    border: '#E0E0E0',
+  };
+
+  const safeColors = colors || fallbackColors;
+
   const handleNavigation = (routeName) => {
     navigation.navigate(routeName);
     navigation.closeDrawer();
@@ -71,37 +71,36 @@ export default function CustomDrawerContent(props) {
   const handleAuthAction = () => {
     if (isSignedIn) {
       signOut();
-    } else {
-      navigation.navigate('Login');
-      navigation.closeDrawer();
     }
+    // Remove navigation to Login since AuthGate handles authentication
+    navigation.closeDrawer();
   };
 
     return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: safeColors.background }]}>
       <View style={styles.content}>
         {/* Header Section */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <View style={[styles.logoContainer, { backgroundColor: colors.primary }]}>
-            <Ionicons name="leaf" size={32} color={colors.surface} />
+        <View style={[styles.header, { borderBottomColor: safeColors.border }]}>
+          <View style={[styles.logoContainer, { backgroundColor: safeColors.primary }]}>
+            <Ionicons name="leaf" size={32} color={safeColors.surface} />
           </View>
-          <Text style={[styles.appTitle, { color: colors.text }]}>
+          <Text style={[styles.appTitle, { color: safeColors.text }]}>
             Forest Fire Predictor
           </Text>
-          <Text style={[styles.appSubtitle, { color: colors.textSecondary }]}>
+          <Text style={[styles.appSubtitle, { color: safeColors.textSecondary }]}>
             AI-Powered Fire Risk Assessment
           </Text>
 
           {isSignedIn && user && (
-            <View style={[styles.userInfo, { backgroundColor: colors.surface }]}>
-              <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-                <Ionicons name="person" size={20} color={colors.surface} />
+            <View style={[styles.userInfo, { backgroundColor: safeColors.surface }]}>
+              <View style={[styles.avatar, { backgroundColor: safeColors.primary }]}>
+                <Ionicons name="person" size={20} color={safeColors.surface} />
               </View>
               <View style={styles.userDetails}>
-                <Text style={[styles.userName, { color: colors.text }]}>
+                <Text style={[styles.userName, { color: safeColors.text }]}>
                   {user.firstName || user.emailAddresses?.[0]?.emailAddress || 'User'}
                 </Text>
-                <Text style={[styles.userEmail, { color: colors.textSecondary }]}>
+                <Text style={[styles.userEmail, { color: safeColors.textSecondary }]}>
                   {user.emailAddresses?.[0]?.emailAddress || 'user@example.com'}
                 </Text>
               </View>
@@ -118,30 +117,30 @@ export default function CustomDrawerContent(props) {
                 key={item.name}
                 style={[
                   styles.menuItem,
-                  isActive && { backgroundColor: colors.primary + '20' }
+                  isActive && { backgroundColor: safeColors.primary + '20' }
                 ]}
                 onPress={() => handleNavigation(item.name)}
                 activeOpacity={0.7}
               >
                 <View style={[
                   styles.iconContainer,
-                  isActive && { backgroundColor: colors.primary }
+                  isActive && { backgroundColor: safeColors.primary }
                 ]}>
                   <Ionicons
                     name={isActive ? item.activeIcon : item.icon}
                     size={22}
-                    color={isActive ? colors.surface : colors.textSecondary}
+                    color={isActive ? safeColors.surface : safeColors.textSecondary}
                   />
                 </View>
                 <Text style={[
                   styles.menuText,
-                  { color: isActive ? colors.primary : colors.text },
+                  { color: isActive ? safeColors.primary : safeColors.text },
                   isActive && styles.activeMenuText
                 ]}>
                   {item.label}
                 </Text>
                 {isActive && (
-                  <View style={[styles.activeIndicator, { backgroundColor: colors.primary }]} />
+                  <View style={[styles.activeIndicator, { backgroundColor: safeColors.primary }]} />
                 )}
               </TouchableOpacity>
             );
@@ -152,14 +151,14 @@ export default function CustomDrawerContent(props) {
       {/* Bottom Section - Sign Out and Version */}
       <View style={styles.bottomSection}>
         {/* Divider */}
-        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+        <View style={[styles.divider, { backgroundColor: safeColors.border }]} />
 
         {/* Auth Section */}
         <View style={styles.authContainer}>
           <TouchableOpacity
             style={[
               styles.authButton,
-              { backgroundColor: isSignedIn ? colors.error : colors.primary }
+              { backgroundColor: isSignedIn ? safeColors.error : safeColors.primary }
             ]}
             onPress={handleAuthAction}
             activeOpacity={0.8}
@@ -167,9 +166,9 @@ export default function CustomDrawerContent(props) {
             <Ionicons
               name={isSignedIn ? 'log-out-outline' : 'log-in-outline'}
               size={20}
-              color={colors.surface}
+              color={safeColors.surface}
             />
-            <Text style={[styles.authButtonText, { color: colors.surface }]}>
+            <Text style={[styles.authButtonText, { color: safeColors.surface }]}>
               {isSignedIn ? 'Sign Out' : 'Sign In'}
             </Text>
           </TouchableOpacity>
@@ -177,10 +176,10 @@ export default function CustomDrawerContent(props) {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: colors.textLight }]}>
+          <Text style={[styles.footerText, { color: safeColors.textLight }]}>
             Version 1.0.0
           </Text>
-          <Text style={[styles.footerText, { color: colors.textLight }]}>
+          <Text style={[styles.footerText, { color: safeColors.textLight }]}>
             © 2024 Forest Fire Predictor
           </Text>
         </View>

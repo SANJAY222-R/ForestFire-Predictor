@@ -10,6 +10,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,8 +23,9 @@ import NetworkStatus from '../components/NetworkStatus';
 import apiService from '../services/api';
 
 const AIChatbotScreen = () => {
-  const { colors } = useContext(ThemeContext);
-  const headerHeight = useHeaderHeight();
+  const { colors } = useTheme();
+  // Remove useHeaderHeight since it's not imported and not needed
+  // const headerHeight = useHeaderHeight();
 
   const [messages, setMessages] = useState([
     {
@@ -188,7 +190,17 @@ const AIChatbotScreen = () => {
 };
 
 const QuickActions = ({ setInputText }) => {
-  const { colors } = useContext(ThemeContext);
+  const { colors } = useTheme();
+
+  // Fallback colors in case theme context is not available
+  const fallbackColors = {
+    border: '#E0E0E0',
+    textSecondary: '#666666',
+    surface: '#FFFFFF',
+    text: '#000000',
+  };
+
+  const safeColors = colors || fallbackColors;
 
   const actions = [
     { text: "🔥 High Smoke", msg: "What does high smoke level mean?" },
@@ -198,8 +210,8 @@ const QuickActions = ({ setInputText }) => {
   ];
 
   return (
-    <View style={[styles.quickActions, { borderTopColor: colors.border }]}>
-      <Text style={[styles.quickActionsTitle, { color: colors.textSecondary }]}>
+    <View style={[styles.quickActions, { borderTopColor: safeColors.border }]}>
+      <Text style={[styles.quickActionsTitle, { color: safeColors.textSecondary }]}>
         Quick Questions:
       </Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -209,13 +221,13 @@ const QuickActions = ({ setInputText }) => {
             style={[
               styles.quickButton,
               {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
+                backgroundColor: safeColors.surface,
+                borderColor: safeColors.border,
               },
             ]}
             onPress={() => setInputText(btn.msg)}
           >
-            <Text style={[styles.quickButtonText, { color: colors.text }]}>
+            <Text style={[styles.quickButtonText, { color: safeColors.text }]}>
               {btn.text}
             </Text>
           </TouchableOpacity>

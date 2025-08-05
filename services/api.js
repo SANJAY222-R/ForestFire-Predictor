@@ -1,5 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import { getNetworkErrorMessage } from '../utils/networkUtils';
+import { showNetworkErrorToast, showApiErrorToast } from './toastService';
 
 // API Configuration - Use the correct IP address for mobile development
 const API_BASE_URL = __DEV__ 
@@ -31,13 +32,10 @@ const FALLBACK_DATA = {
     }
   ],
   stats: {
-    total_predictions: 0,
-    high_risk_predictions: 0,
     active_devices: 1,
     total_alerts: 1,
     unread_alerts: 0,
   },
-
 };
 
 class ApiService {
@@ -120,13 +118,16 @@ class ApiService {
       }
     }
     
-    // Provide more specific error messages
+    // Provide more specific error messages and show toasts
     if (lastError.name === 'AbortError') {
+      showNetworkErrorToast();
       throw new Error('Request timeout. Please check your connection and try again.');
     } else if (lastError.message.includes('Network request failed')) {
+      showNetworkErrorToast();
       const networkError = getNetworkErrorMessage(lastError);
       throw new Error(networkError);
     } else {
+      showApiErrorToast(lastError);
       throw lastError;
     }
   }
@@ -243,48 +244,6 @@ class ApiService {
     if (deviceId) params.device_id = deviceId;
     const response = await this.get('/sensors/readings', params);
     return response.readings || response;
-  }
-
-  // Prediction endpoints
-  async createPrediction(data) {
-    return this.post('/predictions', data);
-  }
-
-  async getUserPredictions(params = {}) {
-    return this.get('/predictions', params);
-  }
-
-  async getPrediction(predictionId) {
-    return this.get(`/predictions/${predictionId}`);
-  }
-
-  async getPredictionStats() {
-    return this.get('/predictions/stats');
-  }
-
-  async createBulkPredictions(readings) {
-    return this.post('/predictions/bulk', { readings });
-  }
-
-  // ML endpoints
-  async getMLInfo() {
-    return this.get('/predictions/ml/info');
-  }
-
-  async trainMLModel(params = {}) {
-    return this.post('/predictions/ml/train', params);
-  }
-
-  async evaluateMLModel(params = {}) {
-    return this.get('/predictions/ml/evaluate', params);
-  }
-
-  async getModelPerformance() {
-    return this.get('/predictions/ml/performance');
-  }
-
-  async retrainMLModel(params = {}) {
-    return this.post('/predictions/ml/retrain', params);
   }
 
   // Alert endpoints

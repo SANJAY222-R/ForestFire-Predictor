@@ -4,35 +4,52 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
 
-const ErrorMessage = ({ error, onRetry, title = 'Error' }) => {
+const ErrorMessage = ({ 
+  error, 
+  onRetry, 
+  title = 'Error',
+  containerStyle = {},
+  showIcon = true
+}) => {
   const { colors } = useTheme();
+
+  // Fallback colors in case theme context is not available
+  const fallbackColors = {
+    error: '#FF4444',
+    text: '#000000',
+    textSecondary: '#666666',
+    primary: '#FFA500',
+    surface: '#FFFFFF',
+  };
+
+  const safeColors = colors || fallbackColors;
 
   if (!error) return null;
 
   return (
     <View style={[styles.container, containerStyle]}>
       {showIcon && (
-        <View style={[styles.iconContainer, { backgroundColor: colors.error + '20' }]}>
-          <Ionicons name="alert-circle-outline" size={24} color={colors.error} />
+        <View style={[styles.iconContainer, { backgroundColor: safeColors.error + '20' }]}>
+          <Ionicons name="alert-circle-outline" size={24} color={safeColors.error} />
         </View>
       )}
       
       <View style={styles.content}>
-        <Text style={[styles.title, { color: colors.text }]}>
+        <Text style={[styles.title, { color: safeColors.text }]}>
           {title}
         </Text>
-        <Text style={[styles.message, { color: colors.textSecondary }]}>
+        <Text style={[styles.message, { color: safeColors.textSecondary }]}>
           {error}
         </Text>
       </View>
 
       {onRetry && (
         <TouchableOpacity 
-          style={[styles.retryButton, { backgroundColor: colors.primary }]}
+          style={[styles.retryButton, { backgroundColor: safeColors.primary }]}
           onPress={onRetry}
         >
-          <Ionicons name="refresh" size={16} color={colors.surface} />
-          <Text style={[styles.retryText, { color: colors.surface }]}>
+          <Ionicons name="refresh" size={16} color={safeColors.surface} />
+          <Text style={[styles.retryText, { color: safeColors.surface }]}>
             Retry
           </Text>
         </TouchableOpacity>

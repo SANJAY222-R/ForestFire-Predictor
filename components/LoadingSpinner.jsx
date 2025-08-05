@@ -3,10 +3,22 @@ import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
 
-const LoadingSpinner = ({ text = 'Loading...', size = 'large' }) => {
+const LoadingSpinner = ({ 
+  text = 'Loading...', 
+  size = 'large', 
+  containerStyle = {},
+  textStyle = {}
+}) => {
   const { colors } = useTheme();
   
-  const spinnerColor = color || colors.primary;
+  // Fallback colors in case theme context is not available
+  const fallbackColors = {
+    primary: '#FFA500',
+    textSecondary: '#666666',
+  };
+
+  const safeColors = colors || fallbackColors;
+  const spinnerColor = safeColors.primary;
 
   return (
     <View style={[styles.container, containerStyle]}>
@@ -17,7 +29,7 @@ const LoadingSpinner = ({ text = 'Loading...', size = 'large' }) => {
       {text && (
         <Text style={[
           styles.text, 
-          { color: colors.textSecondary },
+          { color: safeColors.textSecondary },
           textStyle
         ]}>
           {text}

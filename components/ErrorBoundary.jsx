@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ThemeContext } from '../theme/ThemeContext';
+import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
 
 class ErrorBoundary extends React.Component {
@@ -28,36 +28,51 @@ class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
-      return (
-        <ThemeContext.Consumer>
-          {({ colors }) => (
-            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-              <View style={styles.content}>
-                <Text style={[styles.icon, { color: colors.error }]}>⚠️</Text>
-                <Text style={[styles.title, { color: colors.text }]}>
-                  Something went wrong
-                </Text>
-                <Text style={[styles.message, { color: colors.textSecondary }]}>
-                  We encountered an unexpected error. Please try again.
-                </Text>
-                <TouchableOpacity
-                  style={[styles.retryButton, { backgroundColor: colors.primary }]}
-                  onPress={this.handleRetry}
-                >
-                  <Text style={[styles.retryText, { color: colors.onPrimary }]}>
-                    Try Again
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </SafeAreaView>
-          )}
-        </ThemeContext.Consumer>
-      );
+      return <ErrorFallback onRetry={this.handleRetry} />;
     }
 
     return this.props.children;
   }
 }
+
+// Separate functional component to use hooks
+const ErrorFallback = ({ onRetry }) => {
+  const { colors } = useTheme();
+  
+  // Fallback colors in case theme context is not available
+  const fallbackColors = {
+    background: '#FFF8DC',
+    error: '#FF4444',
+    text: '#000000',
+    textSecondary: '#666666',
+    primary: '#FFA500',
+    surface: '#FFFFFF',
+  };
+
+  const safeColors = colors || fallbackColors;
+
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: safeColors.background }]}>
+      <View style={styles.content}>
+        <Text style={[styles.icon, { color: safeColors.error }]}>⚠️</Text>
+        <Text style={[styles.title, { color: safeColors.text }]}>
+          Something went wrong
+        </Text>
+        <Text style={[styles.message, { color: safeColors.textSecondary }]}>
+          We encountered an unexpected error. Please try again.
+        </Text>
+        <TouchableOpacity
+          style={[styles.retryButton, { backgroundColor: safeColors.primary }]}
+          onPress={onRetry}
+        >
+          <Text style={[styles.retryText, { color: safeColors.surface }]}>
+            Try Again
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -79,7 +94,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   message: {
-    ...typography.body,
+    ...typography.body1,
     textAlign: 'center',
     marginBottom: 24,
   },

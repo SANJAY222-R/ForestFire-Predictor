@@ -1,5 +1,5 @@
-import React, { useContext } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import React, { useContext, useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useUser, useAuth } from '@clerk/clerk-expo';
@@ -8,6 +8,8 @@ import { typography } from '../theme/typography';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import { useUserProfile } from '../hooks/useUserProfile';
+import { useUserSync } from '../hooks/useUserSync';
+import { showSuccessToast, showErrorToast, showInfoToast, showWarningToast } from '../services/toastService';
 
 const ProfileScreen = ({ navigation }) => {
   const { colors } = useTheme();
@@ -35,8 +37,12 @@ const ProfileScreen = ({ navigation }) => {
   useEffect(() => {
     if (user && isLoaded && isSignedIn && !profileData && !loading) {
       console.log('Auto-syncing user with backend...');
-      syncUser().catch(err => {
+      showInfoToast('Syncing your profile data...', 'Syncing');
+      syncUser().then(() => {
+        showSuccessToast('Profile data synchronized successfully');
+      }).catch(err => {
         console.error('Auto-sync failed:', err);
+        showErrorToast('Failed to sync profile data. Please try again.');
       });
     }
   }, [user, isLoaded, isSignedIn, profileData, loading, syncUser]);
@@ -146,11 +152,7 @@ const ProfileScreen = ({ navigation }) => {
   const handleLogout = async () => {
     // Check if signOut function is available
     if (!signOut || typeof signOut !== 'function') {
-      Alert.alert(
-        'Sign Out Error',
-        'Sign out function is not available. Please restart the app.',
-        [{ text: 'OK' }]
-      );
+      showErrorToast('Sign out function is not available. Please restart the app.', 'Sign Out Error');
       return;
     }
 
@@ -168,16 +170,14 @@ const ProfileScreen = ({ navigation }) => {
           onPress: async () => {
             try {
               setIsLoggingOut(true);
+              showInfoToast('Signing out...', 'Please wait');
               console.log('🔄 Signing out user...');
               await signOut();
               console.log('✅ User signed out successfully');
+              showSuccessToast('Signed out successfully');
             } catch (error) {
               console.error('❌ Sign out failed:', error);
-              Alert.alert(
-                'Sign Out Error',
-                'Failed to sign out. Please try again.',
-                [{ text: 'OK' }]
-              );
+              showErrorToast('Failed to sign out. Please try again.', 'Sign Out Error');
             } finally {
               setIsLoggingOut(false);
             }

@@ -17,6 +17,8 @@ import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
+import { useUserSync } from '../hooks/useUserSync';
+import { showSuccessToast, showErrorToast, showInfoToast } from '../services/toastService';
 
 const LoginScreen = ({ switchToSignup }) => {
   const { colors } = useTheme();
@@ -31,27 +33,23 @@ const LoginScreen = ({ switchToSignup }) => {
     if (!isLoaded) return;
     setPending(true);
     try {
-      console.log("🔐 Starting login process...");
+      showInfoToast('Signing in...', 'Please wait');
       const result = await signIn.create({ identifier: email, password });
-      console.log("✅ Login successful");
       
-      console.log("🔐 Setting active session...");
       await setActive({ session: result.createdSessionId });
-      console.log("✅ Session activated");
       
       // Sync user with backend after successful login
-      console.log("🔄 Syncing user with backend...");
       try {
         await syncUser();
-        console.log("✅ User synced successfully");
+        showSuccessToast('Welcome back!', 'Login Successful');
       } catch (syncError) {
-        console.error("❌ Sync failed but continuing:", syncError);
+        console.error('Sync failed but continuing:', syncError);
+        showWarningToast('Login successful but profile sync failed. You can sync later.');
         // Don't block the login if sync fails
       }
       
     } catch (err) {
-      console.error("❌ Login/sync error:", err);
-      Alert.alert("Login failed", err.errors?.[0]?.message || err.message);
+      showErrorToast(err.errors?.[0]?.message || err.message, 'Login Failed');
     }
     setPending(false);
   };
@@ -210,7 +208,7 @@ const getStyles = (colors) =>
     inputContainer: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: colors.card,
+      backgroundColor: colors.cardBackground,
       borderWidth: 1,
       borderColor: colors.border,
       borderRadius: 12,
@@ -276,3 +274,5 @@ const getStyles = (colors) =>
       textAlign: "center",
     },
   });
+
+export default LoginScreen;

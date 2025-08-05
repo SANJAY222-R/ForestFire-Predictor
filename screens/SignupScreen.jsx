@@ -17,6 +17,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
+import { showSuccessToast, showErrorToast, showInfoToast } from '../services/toastService';
 
 const SignupScreen = ({ switchToLogin }) => {
   const { colors } = useTheme();
@@ -33,7 +34,7 @@ const SignupScreen = ({ switchToLogin }) => {
     if (!isLoaded) return;
     setPending(true);
     try {
-      console.log("📝 User signup data:", { username, email });
+      showInfoToast('Creating your account...', 'Please wait');
       await signUp.create({
         username,
         emailAddress: email,
@@ -41,8 +42,9 @@ const SignupScreen = ({ switchToLogin }) => {
       });
       await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
       setVerifying(true);
+      showSuccessToast('Account created! Please check your email for verification code.', 'Signup Successful');
     } catch (err) {
-      Alert.alert("Signup failed", err.errors?.[0]?.message || err.message);
+      showErrorToast(err.errors?.[0]?.message || err.message, 'Signup Failed');
     }
     setPending(false);
   };
@@ -51,38 +53,25 @@ const SignupScreen = ({ switchToLogin }) => {
     if (!isLoaded) return;
     setPending(true);
     try {
-      console.log("🔐 Starting email verification...");
+      showInfoToast('Verifying your email...', 'Please wait');
       const result = await signUp.attemptEmailAddressVerification({ code });
-      console.log("✅ Email verification successful");
       
-      console.log("🔐 Setting active session...");
       await setActive({ session: result.createdSessionId });
-      console.log("✅ Session activated");
+      
+      showSuccessToast('Email verified successfully! Welcome to Forest Fire Predictor!', 'Verification Successful');
       
       // Sync user with backend after successful signup using the actual user input
-      console.log("🔄 Syncing new user with backend using actual input data...");
-      console.log("📝 Actual user input:", { username, email });
       try {
         // Pass the actual user input to sync
         // await syncUser({ username, email }); // This line was removed as per the new_code
-        console.log("✅ User synced successfully with real data");
       } catch (syncError) {
-        console.error("❌ Sync failed but continuing:", syncError);
+        console.error('Sync failed but continuing:', syncError);
+        showWarningToast('Account created but profile sync failed. You can sync later.');
         // Don't block the navigation if sync fails
       }
       
-      console.log("🔄 Navigating to home screen...");
-      // navigation.reset({ // This line was removed as per the new_code
-      //   index: 0,
-      //   routes: [{ name: "HomeScreen" }],
-      // });
-      console.log("✅ Navigation completed");
     } catch (err) {
-      console.error("❌ Verification/sync error:", err);
-      Alert.alert(
-        "Verification failed",
-        err.errors?.[0]?.message || err.message
-      );
+      showErrorToast(err.errors?.[0]?.message || err.message, 'Verification Failed');
     }
     setPending(false);
   };
@@ -326,7 +315,7 @@ const getStyles = (colors) =>
     inputContainer: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: colors.card,
+      backgroundColor: colors.cardBackground,
       borderWidth: 1,
       borderColor: colors.border,
       borderRadius: 12,
@@ -404,3 +393,5 @@ const getStyles = (colors) =>
       textAlign: "center",
     },
   });
+
+export default SignupScreen;

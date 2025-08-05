@@ -23,6 +23,7 @@ import { useDashboardData, useAcknowledgeAlert } from '../hooks/useApi';
 import { useUserSync } from '../hooks/useUserSync';
 import { SENSOR_TYPES, ALERT_TYPES } from '../utils/constants';
 import apiService from '../services/api';
+import { showSuccessToast, showErrorToast, showInfoToast } from '../services/toastService';
 
 const HomeScreen = ({ navigation }) => {
   const { colors } = useTheme();
@@ -41,8 +42,12 @@ const HomeScreen = ({ navigation }) => {
   useEffect(() => {
     if (user && isLoaded && isSignedIn) {
       console.log('Auto-syncing user on app access...');
-      syncUser().catch(err => {
+      showInfoToast('Syncing your profile...', 'Please wait');
+      syncUser().then(() => {
+        showSuccessToast('Profile synchronized successfully');
+      }).catch(err => {
         console.error('Auto-sync failed on app access:', err);
+        showErrorToast('Failed to sync profile. You can sync later.');
       });
     }
   }, [user, isLoaded, isSignedIn, syncUser]);
@@ -88,12 +93,14 @@ const HomeScreen = ({ navigation }) => {
   const handleAlertPress = async (alert) => {
     try {
       if (!alert.is_read) {
+        showInfoToast('Acknowledging alert...', 'Please wait');
         await acknowledgeAlert(alert.id);
+        showSuccessToast('Alert acknowledged successfully');
         // Refresh data after acknowledging
         refetch();
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to acknowledge alert. Please try again.');
+      showErrorToast('Failed to acknowledge alert. Please try again.', 'Error');
     }
   };
 

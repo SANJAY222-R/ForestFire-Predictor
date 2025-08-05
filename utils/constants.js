@@ -130,6 +130,49 @@ export const SUCCESS_MESSAGES = {
   ALERT_ACKNOWLEDGED: 'Alert acknowledged successfully!',
   SETTINGS_SAVED: 'Settings saved successfully!',
   DATA_SYNCED: 'Data synchronized successfully!',
+  LOGIN_SUCCESS: 'Welcome back!',
+  SIGNUP_SUCCESS: 'Account created successfully!',
+  VERIFICATION_SUCCESS: 'Email verified successfully!',
+  LOGOUT_SUCCESS: 'Signed out successfully',
+  SYNC_SUCCESS: 'Profile synchronized successfully',
+};
+
+// Toast Messages
+export const TOAST_MESSAGES = {
+  // Authentication
+  LOGIN_LOADING: 'Signing in...',
+  SIGNUP_LOADING: 'Creating your account...',
+  VERIFICATION_LOADING: 'Verifying your email...',
+  LOGOUT_LOADING: 'Signing out...',
+  
+  // Profile & Sync
+  SYNC_LOADING: 'Syncing your profile...',
+  SYNC_FAILED: 'Failed to sync profile. You can sync later.',
+  PROFILE_SYNC_SUCCESS: 'Profile data synchronized successfully',
+  
+  // Predictions
+  PREDICTION_LOADING: 'Creating prediction...',
+  PREDICTION_SUCCESS: 'Prediction created successfully!',
+  PREDICTION_FAILED: 'Failed to create prediction. Please try again.',
+  
+  // Alerts
+  ALERT_ACKNOWLEDGING: 'Acknowledging alert...',
+  ALERT_ACKNOWLEDGED: 'Alert acknowledged successfully',
+  ALERT_ACKNOWLEDGE_FAILED: 'Failed to acknowledge alert. Please try again.',
+  
+  // Network
+  NETWORK_ERROR: 'Please check your internet connection and try again',
+  API_ERROR: 'Server error. Please try again later.',
+  TIMEOUT_ERROR: 'Request timeout. Please check your connection.',
+  
+  // Validation
+  MISSING_FIELDS: 'Please fill in all required fields.',
+  VALIDATION_ERROR: 'Please check your input values.',
+  
+  // General
+  LOADING: 'Loading...',
+  SUCCESS: 'Operation completed successfully',
+  ERROR: 'An error occurred. Please try again.',
 };
 
 // Validation Rules

@@ -40,14 +40,6 @@ export const useSensorData = (deviceId = null) => {
   );
 };
 
-// Hook for user predictions
-export const useUserPredictions = (params = {}) => {
-  return useApi(
-    () => apiService.getUserPredictions(params),
-    [JSON.stringify(params)]
-  );
-};
-
 // Hook for user alerts
 export const useUserAlerts = (params = {}) => {
   return useApi(
@@ -72,50 +64,12 @@ export const useDashboardData = () => {
   );
 };
 
-// Hook for prediction stats
-export const usePredictionStats = () => {
-  return useApi(
-    () => apiService.getPredictionStats(),
-    []
-  );
-};
-
-// Hook for ML model info
-export const useMLInfo = () => {
-  return useApi(
-    () => apiService.getMLInfo(),
-    []
-  );
-};
-
 // Hook for sensor devices
 export const useSensorDevices = () => {
   return useApi(
     () => apiService.getSensorDevices(),
     []
   );
-};
-
-// Hook for creating predictions
-export const useCreatePrediction = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const createPrediction = useCallback(async (predictionData) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const result = await apiService.createPrediction(predictionData);
-      return result;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  return { createPrediction, loading, error };
 };
 
 // Hook for acknowledging alerts
@@ -168,48 +122,4 @@ export const useHealthCheck = () => {
     () => apiService.healthCheck(),
     []
   );
-};
-
-// Hook for bulk predictions
-export const useBulkPredictions = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const createBulkPredictions = useCallback(async (readings) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const result = await apiService.createBulkPredictions(readings);
-      return result;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  return { createBulkPredictions, loading, error };
-};
-
-// Hook for training ML model
-export const useTrainMLModel = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const trainModel = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const result = await apiService.trainMLModel();
-      return result;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  return { trainModel, loading, error };
 }; 

@@ -38,6 +38,14 @@
     "experiments": {
       "typedRoutes": true
     },
-    "displayName": "Forest Fire Predictor"
+    "displayName": "Forest Fire Predictor",
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    }
   }
 }

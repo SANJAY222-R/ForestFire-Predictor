@@ -9,28 +9,20 @@ export const useUserSync = () => {
 
   const syncUser = useCallback(async (userInput = null) => {
     try {
-      console.log('🔄 Starting user sync process...');
       setSyncing(true);
       setError(null);
 
       // Get the current token from Clerk
-      console.log('🔑 Getting token from Clerk...');
       const token = await getToken();
       
       if (!token) {
-        console.error('❌ No token available from Clerk');
         throw new Error('No authentication token available');
       }
-
-      console.log('✅ Token received from Clerk');
-      console.log('📝 Token length:', token.length);
-      console.log('🔑 Token preview:', token.substring(0, 50) + '...');
       
       // Use actual user input if provided (from signup), otherwise extract from Clerk
       let userData = {};
       if (userInput && userInput.username && userInput.email) {
         // Use the actual data the user entered during signup
-        console.log('👤 Using actual user input from signup:', userInput);
         userData = {
           clerk_user_id: user?.id || 'unknown',
           email: userInput.email,
@@ -40,7 +32,6 @@ export const useUserSync = () => {
         };
       } else if (user) {
         // Fallback: Extract user data from Clerk user object
-        console.log('👤 Extracting user data from Clerk (fallback)...');
         
         // Get email from various possible sources
         let email = '';
@@ -91,27 +82,16 @@ export const useUserSync = () => {
         };
       }
 
-      console.log('📊 Final user data to send to backend:', userData);
-      
       // Sync user with backend (send both token and user data)
-      console.log('🌐 Calling backend sync endpoint...');
       const result = await apiService.syncUser(token, userData);
       
-      console.log('✅ User sync completed successfully');
-      console.log('📊 Sync result:', result);
       return result;
       
     } catch (err) {
-      console.error('❌ Error syncing user:', err);
-      console.error('❌ Error details:', {
-        message: err.message,
-        stack: err.stack,
-        name: err.name
-      });
+      console.error('Error syncing user:', err);
       setError(err.message);
       throw err;
     } finally {
-      console.log('🏁 Sync process finished');
       setSyncing(false);
     }
   }, [getToken, user]);
