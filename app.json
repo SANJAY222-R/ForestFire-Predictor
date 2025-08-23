@@ -2,20 +2,32 @@
   "expo": {
     "name": "Forest Fire Predictor",
     "slug": "forest-fire-predictor",
-    "version": "1.0.0",
+    "version": "2.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "extra": {
+      "clerkPublishableKey": "pk_test_Y2hhcm1lZC1tb29zZS01Ni5jbGVyay5hY2NvdW50cy5kZXYk"
+    },
+    "scheme": "forest-fire-predictor",
     "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFF8DC"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.forestfirepredictor.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#FFF8DC"
       },
-      "package": "com.sanjay_expo11.forestfirepredictor"
+      "package": "com.forestfirepredictor.app"
     },
     "web": {
       "bundler": "metro",
@@ -25,34 +37,28 @@
     "plugins": [
       "expo-router",
       [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#FFF8DC"
-        }
-      ],
-      "expo-secure-store",
-      [
         "expo-notifications",
         {
-          "icon": "./assets/images/icon.png",
-          "color": "#ffffff"
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#FFA500",
+          "sounds": ["./assets/sounds/alert.mp3"]
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Forest Fire Predictor to use your location to provide local fire alerts and recommendations."
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true
     },
-    "displayName": "Forest Fire Predictor",
-    "extra": {
-      "router": {
-        "origin": false
-      },
-      "eas": {
-        "projectId": "your-project-id"
-      }
+    "router": {
+      "origin": false
+    },
+    "eas": {
+      "projectId": "your-eas-project-id"
     }
   }
 }

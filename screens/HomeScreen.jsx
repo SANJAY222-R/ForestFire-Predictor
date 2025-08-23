@@ -8,9 +8,7 @@ import {
   Alert,
   TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '@clerk/clerk-expo';
-import { Ionicons } from '@expo/vector-icons';
+import ScreenWrapper from '../components/ScreenWrapper';
 import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
 import SensorCard from '../components/SensorCard';
@@ -22,8 +20,10 @@ import NotificationStatus from '../components/NotificationStatus';
 
 import { useDashboardData, useAcknowledgeAlert } from '../hooks/useApi';
 import { useUserSync } from '../hooks/useUserSync';
+import { useAuth } from '../utils/auth';
 import { SENSOR_TYPES, ALERT_TYPES } from '../utils/constants';
 import apiService from '../services/api';
+import thingSpeakService from '../services/thingspeakService';
 import { showSuccessToast, showErrorToast, showInfoToast, showFireAlertToast } from '../services/toastService';
 import notificationService from '../services/notificationService';
 
@@ -78,28 +78,23 @@ const HomeScreen = ({ navigation }) => {
     };
   }, []);
 
-  // Fetch ThingSpeak data
+  // Fetch ThingSpeak data directly from the service
   const fetchThingSpeakData = async () => {
     try {
       setThingSpeakLoading(true);
       setThingSpeakError(null);
-      
-      const response = await apiService.fetchThingSpeakData();
-      
-      if (response.success) {
+      const response = await thingSpeakService.fetchRealTimeData();
+      if (response && response.temperature != null && response.humidity != null && response.smoke_level != null) {
         setThingSpeakData(response);
         setLastUpdate(new Date().toLocaleTimeString());
-        
-        // Check for fire alerts if prediction is available
-        if (response.prediction) {
-          handleFireAlert(response.prediction);
-        }
       } else {
-        setThingSpeakError('Failed to fetch real-time data');
+        setThingSpeakError('Failed to fetch valid sensor data');
+        setThingSpeakData(thingSpeakService.getFallbackData());
       }
     } catch (error) {
       console.error('Error fetching ThingSpeak data:', error);
       setThingSpeakError('Failed to connect to IoT sensors');
+      setThingSpeakData(thingSpeakService.getFallbackData());
     } finally {
       setThingSpeakLoading(false);
     }
@@ -108,11 +103,9 @@ const HomeScreen = ({ navigation }) => {
   // Auto-refresh ThingSpeak data every 30 seconds
   useEffect(() => {
     fetchThingSpeakData();
-    
     const interval = setInterval(() => {
       fetchThingSpeakData();
     }, 30000); // 30 seconds
-
     return () => clearInterval(interval);
   }, []);
 
@@ -160,49 +153,46 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
-  // Transform ThingSpeak data for display
-  const transformThingSpeakData = () => {
-    if (!thingSpeakData?.reading) return [];
-
-    const reading = thingSpeakData.reading;
-    
+  // Only display temperature, humidity, and smoke
+  const getSensorCards = () => {
+    if (!thingSpeakData) return [];
     return [
       {
         icon: 'thermometer-outline',
         title: 'Temperature',
-        value: reading.temperature || 'N/A',
+        value: thingSpeakData.temperature ?? 'N/A',
         unit: '°C',
-        recommendation: (reading.temperature || 0) > 30 
+        recommendation: (thingSpeakData.temperature || 0) > 30
           ? '🔥 High temperature detected – monitor closely'
-          : (reading.temperature || 0) > 25 
+          : (thingSpeakData.temperature || 0) > 25
           ? '⚠️ Elevated temperature – stay alert'
           : '✅ Temperature within normal range',
-        riskLevel: (reading.temperature || 0) > 30 ? 'high' : (reading.temperature || 0) > 25 ? 'moderate' : 'low',
+        riskLevel: (thingSpeakData.temperature || 0) > 30 ? 'high' : (thingSpeakData.temperature || 0) > 25 ? 'moderate' : 'low',
       },
       {
         icon: 'water-outline',
         title: 'Humidity',
-        value: reading.humidity || 'N/A',
+        value: thingSpeakData.humidity ?? 'N/A',
         unit: '%',
-        recommendation: (reading.humidity || 0) < 30 
+        recommendation: (thingSpeakData.humidity || 0) < 30
           ? '⚠️ Low humidity increases fire risk'
-          : (reading.humidity || 0) < 50 
+          : (thingSpeakData.humidity || 0) < 50
           ? '🟡 Moderate humidity – monitor conditions'
           : '✅ Humidity levels are safe',
-        riskLevel: (reading.humidity || 0) < 30 ? 'high' : (reading.humidity || 0) < 50 ? 'moderate' : 'low',
+        riskLevel: (thingSpeakData.humidity || 0) < 30 ? 'high' : (thingSpeakData.humidity || 0) < 50 ? 'moderate' : 'low',
       },
       {
         icon: 'cloud-outline',
         title: 'Smoke Level',
-        value: reading.smoke_level || 'N/A',
+        value: thingSpeakData.smoke_level ?? 'N/A',
         unit: 'ppm',
-        recommendation: (reading.smoke_level || 0) > 200 
+        recommendation: (thingSpeakData.smoke_level || 0) > 200
           ? '🚨 High smoke levels detected!'
-          : (reading.smoke_level || 0) > 100 
+          : (thingSpeakData.smoke_level || 0) > 100
           ? '⚠️ Elevated smoke levels'
           : '✅ Safe smoke levels',
-        riskLevel: (reading.smoke_level || 0) > 200 ? 'high' : (reading.smoke_level || 0) > 100 ? 'moderate' : 'low',
-      }
+        riskLevel: (thingSpeakData.smoke_level || 0) > 200 ? 'high' : (thingSpeakData.smoke_level || 0) > 100 ? 'moderate' : 'low',
+      },
     ];
   };
 
@@ -253,7 +243,7 @@ const HomeScreen = ({ navigation }) => {
   let alertsData = [];
   
   try {
-    sensorData = transformThingSpeakData();
+    sensorData = getSensorCards();
     alertsData = transformAlertData(Array.isArray(data?.alerts) ? data.alerts : []);
   } catch (error) {
     console.error('Error transforming data:', error);
@@ -263,7 +253,7 @@ const HomeScreen = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <ScreenWrapper>
       <ScrollView
         style={styles.scrollView}
         refreshControl={
@@ -426,7 +416,7 @@ const HomeScreen = ({ navigation }) => {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 };
 

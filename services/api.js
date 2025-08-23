@@ -1,10 +1,9 @@
-import * as SecureStore from 'expo-secure-store';
 import { getNetworkErrorMessage } from '../utils/networkUtils';
 import { showNetworkErrorToast, showApiErrorToast } from './toastService';
 
 // API Configuration - Use the correct IP address for mobile development
 const API_BASE_URL = __DEV__ 
-  ? 'http://10.156.51.191:5000/api'  // Development - use your computer's IP address
+  ? 'http://10.122.117.191:5000/api'  // Development - use your computer's IP address
   : 'https://your-production-api.com/api'; // Production
 
 // Fallback data for when API is not available
@@ -46,14 +45,11 @@ class ApiService {
     this.isOnline = true;
   }
 
-  // Get authentication token from Clerk
+  // Get authentication token from Firebase
   async getAuthToken() {
     try {
-      const token = await SecureStore.getItemAsync('clerk-db.session');
-      if (token) {
-        const parsedToken = JSON.parse(token);
-        return parsedToken?.jwt || null;
-      }
+      // For Firebase, we'll use the user's ID token
+      // This will be implemented when we add Firebase token management
       return null;
     } catch (error) {
       console.error('Error getting auth token:', error);
@@ -93,9 +89,20 @@ class ApiService {
         clearTimeout(timeoutId);
 
         if (!response.ok) {
-          const errorData = await response.text();
-          console.error(`❌ API Error ${response.status}:`, errorData);
-          throw new Error(`API Error: ${response.status} - ${errorData}`);
+          const errorText = await response.text();
+          console.error(`❌ API Error (${response.status}): ${errorText}`);
+          
+          if (response.status === 401) {
+            throw new Error('Authentication failed. Please sign in again.');
+          } else if (response.status === 403) {
+            throw new Error('Access denied. Please check your permissions.');
+          } else if (response.status === 404) {
+            throw new Error('Resource not found.');
+          } else if (response.status >= 500) {
+            throw new Error('Server error. Please try again later.');
+          } else {
+            throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+          }
         }
 
         const data = await response.json();
@@ -104,47 +111,32 @@ class ApiService {
 
       } catch (error) {
         lastError = error;
-        console.error(`❌ API Request failed for ${endpoint} (attempt ${attempt}):`, error);
+        console.error(`❌ API Request failed (attempt ${attempt}):`, error);
         
-        // Don't retry on certain errors
-        if (error.name === 'AbortError' || error.message.includes('Network request failed')) {
-          break;
+        if (error.name === 'AbortError') {
+          console.error('Request timeout');
+        }
+        
+        // If this is the last attempt, throw the error
+        if (attempt === this.retryAttempts) {
+          throw error;
         }
         
         // Wait before retrying (exponential backoff)
-        if (attempt < this.retryAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-        }
+        await new Promise(resolve => setTimeout(resolve, attempt * 1000));
       }
     }
     
-    // Provide more specific error messages and show toasts
-    if (lastError.name === 'AbortError') {
-      showNetworkErrorToast();
-      throw new Error('Request timeout. Please check your connection and try again.');
-    } else if (lastError.message.includes('Network request failed')) {
-      showNetworkErrorToast();
-      const networkError = getNetworkErrorMessage(lastError);
-      throw new Error(networkError);
-    } else {
-      showApiErrorToast(lastError);
-      throw lastError;
-    }
+    throw lastError;
   }
 
-  // GET request with parameter filtering
+  // HTTP method wrappers
   async get(endpoint, params = {}) {
-    // Filter out undefined and null parameters
-    const filteredParams = Object.fromEntries(
-      Object.entries(params).filter(([_, value]) => value !== undefined && value !== null)
-    );
-    
-    const queryString = new URLSearchParams(filteredParams).toString();
+    const queryString = new URLSearchParams(params).toString();
     const url = queryString ? `${endpoint}?${queryString}` : endpoint;
     return this.request(url);
   }
 
-  // POST request
   async post(endpoint, data = {}) {
     return this.request(endpoint, {
       method: 'POST',
@@ -152,7 +144,6 @@ class ApiService {
     });
   }
 
-  // PUT request
   async put(endpoint, data = {}) {
     return this.request(endpoint, {
       method: 'PUT',
@@ -160,54 +151,55 @@ class ApiService {
     });
   }
 
-  // DELETE request
   async delete(endpoint) {
     return this.request(endpoint, {
       method: 'DELETE',
     });
   }
 
-  // Health check
+  // Health check endpoint
   async healthCheck() {
-    return this.get('/health');
+    try {
+      return await this.get('/health');
+    } catch (error) {
+      console.error('Health check failed:', error);
+      return { status: 'offline', error: error.message };
+    }
   }
 
-  // Authentication endpoints
+  // Authentication methods
   async verifyAuth(token) {
     return this.post('/auth/verify', { token });
   }
 
   async syncUser(token, userData = {}) {
-    console.log('🌐 API Service: Calling sync endpoint...');
-    console.log('📤 Request payload:', { 
-      token: token.substring(0, 50) + '...',
-      userData: userData
-    });
-    
     try {
-      const result = await this.post('/auth/sync', { token, userData });
-      console.log('✅ API Service: Sync successful');
-      console.log('📊 API Service: Response:', result);
-      return result;
+      // For Firebase, we can sync user data without a token for now
+      // The backend will need to be updated to handle Firebase user IDs
+      const response = await this.post('/auth/sync', { 
+        firebase_user_id: userData.firebase_user_id,
+        user_data: userData 
+      });
+      
+      console.log('✅ User sync successful:', response);
+      return response;
     } catch (error) {
-      console.error('❌ API Service: Sync failed');
-      console.error('❌ API Service: Error details:', error);
+      console.error('❌ User sync failed:', error);
       throw error;
     }
   }
 
+  // User management methods
   async getCurrentUser() {
     return this.get('/auth/user');
   }
 
   async listUsers() {
-    return this.get('/auth/list-users');
+    return this.get('/users');
   }
 
-  // User endpoints
   async getUserProfile() {
-    const response = await this.get('/users/profile');
-    return response.user || response;
+    return this.get('/users/profile');
   }
 
   async updateUserProfile(data) {
@@ -215,13 +207,10 @@ class ApiService {
   }
 
   async getUserStats() {
-    const response = await this.get('/users/stats');
-    return response.stats || response;
+    return this.get('/users/stats');
   }
 
-
-
-  // Sensor endpoints
+  // Sensor management methods
   async getSensorDevices() {
     return this.get('/sensors/devices');
   }
@@ -235,36 +224,30 @@ class ApiService {
   }
 
   async getSensorReadings(params = {}) {
-    const response = await this.get('/sensors/readings', params);
-    return response.readings || response;
+    return this.get('/sensors/readings', params);
   }
 
   async getLatestReadings(deviceId = null) {
-    const params = { limit: 10 };
-    if (deviceId) params.device_id = deviceId;
-    const response = await this.get('/sensors/readings', params);
-    return response.readings || response;
+    const params = deviceId ? { device_id: deviceId } : {};
+    return this.get('/sensors/readings/latest', params);
   }
 
-  // Prediction endpoints
+  // Prediction methods
   async createPrediction(data) {
-    return this.post('/predictions/', data);
+    return this.post('/predictions', data);
   }
 
   async getPredictions(params = {}) {
-    const response = await this.get('/predictions/', params);
-    return response.predictions || response;
+    return this.get('/predictions', params);
   }
 
   async getLatestPrediction() {
-    const response = await this.get('/predictions/', { limit: 1, sort: 'created_at', order: 'desc' });
-    return response.predictions?.[0] || response;
+    return this.get('/predictions/latest');
   }
 
-  // Alert endpoints
+  // Alert management methods
   async getUserAlerts(params = {}) {
-    const response = await this.get('/alerts/', params);
-    return response.alerts || response;
+    return this.get('/alerts', params);
   }
 
   async getAlert(alertId) {
@@ -272,67 +255,67 @@ class ApiService {
   }
 
   async acknowledgeAlert(alertId) {
-    return this.put(`/alerts/${alertId}/acknowledge`);
+    return this.post(`/alerts/${alertId}/acknowledge`);
   }
 
   async resolveAlert(alertId) {
-    return this.put(`/alerts/${alertId}/resolve`);
+    return this.post(`/alerts/${alertId}/resolve`);
   }
 
   async getAlertStats() {
     return this.get('/alerts/stats');
   }
 
-  // Real-time data helpers
+  // Real-time data methods
   async getLiveSensorData() {
-    const response = await this.get('/sensors/readings', { 
-      limit: 3, 
-      sort: 'timestamp',
-      order: 'desc' 
-    });
-    return response.readings || response;
-  }
-
-  async getRecentAlerts() {
-    const response = await this.get('/alerts/', { 
-      limit: 5, 
-      sort: 'created_at',
-      order: 'desc' 
-    });
-    return response.alerts || response;
-  }
-
-  async getDashboardData() {
     try {
-      const [sensorDataResponse, alertsResponse, statsResponse] = await Promise.all([
-        this.getLiveSensorData(),
-        this.getRecentAlerts(),
-        this.getUserStats(),
-      ]);
-
-      return {
-        sensorData: sensorDataResponse.readings || sensorDataResponse || [],
-        alerts: alertsResponse.alerts || alertsResponse || [],
-        stats: statsResponse.stats || statsResponse || {},
-      };
+      return await this.get('/sensors/live');
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      
-      // Only use fallback for network-related errors
-      if (error.message.includes('Network request failed') || 
-          error.message.includes('Request timeout') ||
-          error.name === 'AbortError') {
-        console.log('Using fallback data due to network issues');
-        return FALLBACK_DATA;
-      }
-      
-      throw error;
+      console.error('Failed to get live sensor data:', error);
+      // Return fallback data
+      return FALLBACK_DATA.sensorData;
     }
   }
 
-  // ThingSpeak endpoints
+  async getRecentAlerts() {
+    try {
+      return await this.get('/alerts/recent');
+    } catch (error) {
+      console.error('Failed to get recent alerts:', error);
+      // Return fallback data
+      return FALLBACK_DATA.alerts;
+    }
+  }
+
+  // Dashboard data
+  async getDashboardData() {
+    try {
+      const response = await this.get('/dashboard');
+      return response;
+    } catch (error) {
+      console.error('Failed to get dashboard data:', error);
+      // Return fallback data
+      return {
+        sensorData: FALLBACK_DATA.sensorData,
+        alerts: FALLBACK_DATA.alerts,
+        stats: FALLBACK_DATA.stats,
+        error: error.message
+      };
+    }
+  }
+
+  // ThingSpeak integration methods
   async fetchThingSpeakData() {
-    return this.get('/sensors/thingspeak/fetch');
+    try {
+      return await this.get('/sensors/thingspeak/fetch');
+    } catch (error) {
+      console.error('Failed to fetch ThingSpeak data:', error);
+      return {
+        success: false,
+        error: error.message,
+        data: null
+      };
+    }
   }
 
   async syncThingSpeakData(params = {}) {
@@ -344,7 +327,6 @@ class ApiService {
   }
 }
 
-// Create singleton instance
+// Create and export a singleton instance
 const apiService = new ApiService();
-
 export default apiService; 

@@ -7,11 +7,10 @@ import {
   Image,
   SafeAreaView 
 } from 'react-native';
-import { DrawerItem } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '@clerk/clerk-expo';
 import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
+import { useAuth } from '../utils/auth';
 
 const menuItems = [
   {

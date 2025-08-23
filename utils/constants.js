@@ -1,6 +1,6 @@
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: 'http://10.156.51.191:5000/api', // Use your computer's IP address
+  BASE_URL: 'http://10.122.117.191:5000/api', // Use your computer's IP address
   TIMEOUT: 15000,
   RETRY_ATTEMPTS: 3,
 };

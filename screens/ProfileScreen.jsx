@@ -2,18 +2,17 @@ import React, { useContext, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useUser, useAuth } from '@clerk/clerk-expo';
 import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
-import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useUserSync } from '../hooks/useUserSync';
+import { useAuth } from '../utils/auth';
 import { showSuccessToast, showErrorToast, showInfoToast, showWarningToast } from '../services/toastService';
 
 const ProfileScreen = ({ navigation }) => {
   const { colors } = useTheme();
-  const { user, isLoaded, isSignedIn } = useUser();
+  const { user, isLoaded, isSignedIn } = useAuth();
   const { signOut } = useAuth();
   const { profileData, loading, error, refetch } = useUserProfile();
   const { syncUser, syncing, error: syncError } = useUserSync();

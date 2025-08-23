@@ -12,14 +12,10 @@ import {
   ActivityIndicator,
   Animated,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import ScreenWrapper from '../components/ScreenWrapper';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '@clerk/clerk-expo';
 import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
-import LoadingSpinner from '../components/LoadingSpinner';
-import ErrorMessage from '../components/ErrorMessage';
-import NetworkStatus from '../components/NetworkStatus';
 import apiService from '../services/api';
 
 const AIChatbotScreen = () => {
@@ -127,11 +123,11 @@ const AIChatbotScreen = () => {
   }, [messages.length]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <ScreenWrapper>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={headerHeight}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 44 : 0}
       >
         <ScrollView
           ref={scrollViewRef}
@@ -185,7 +181,7 @@ const AIChatbotScreen = () => {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 };
 

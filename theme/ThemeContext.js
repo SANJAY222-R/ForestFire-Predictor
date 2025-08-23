@@ -30,30 +30,45 @@ const validateColors = (colors) => {
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {
-    return {
+    const fallbackTheme = {
       isDark: false,
       toggleTheme: () => {},
       colors: validateColors(fallbackColors),
       setTheme: () => {},
+      isLoading: false,
     };
+    return fallbackTheme;
   }
-  return context;
+  return {
+    ...context,
+    colors: validateColors(context.colors),
+  };
 };
 
 export const ThemeProvider = ({ children }) => {
   const [isDark, setIsDark] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Load saved theme preference on app start
   useEffect(() => {
     const loadThemePreference = async () => {
       try {
+        setIsLoading(true);
+        setError(null);
+        
         const savedTheme = await AsyncStorage.getItem('theme_preference');
         if (savedTheme !== null) {
           setIsDark(savedTheme === 'dark');
+        } else {
+          // Default to light theme if no preference is saved
+          setIsDark(false);
         }
       } catch (error) {
         console.warn('Failed to load theme preference:', error);
+        setError('Failed to load theme preference');
+        // Fallback to light theme
+        setIsDark(false);
       } finally {
         setIsLoading(false);
       }
@@ -63,23 +78,25 @@ export const ThemeProvider = ({ children }) => {
   }, []);
 
   const toggleTheme = async () => {
-    const newTheme = !isDark;
-    setIsDark(newTheme);
-    
     try {
+      const newTheme = !isDark;
+      setIsDark(newTheme);
+      
       await AsyncStorage.setItem('theme_preference', newTheme ? 'dark' : 'light');
     } catch (error) {
       console.warn('Failed to save theme preference:', error);
+      setError('Failed to save theme preference');
     }
   };
 
   const setTheme = async (darkMode) => {
-    setIsDark(darkMode);
-    
     try {
+      setIsDark(darkMode);
+      
       await AsyncStorage.setItem('theme_preference', darkMode ? 'dark' : 'light');
     } catch (error) {
       console.warn('Failed to save theme preference:', error);
+      setError('Failed to save theme preference');
     }
   };
   
@@ -95,6 +112,7 @@ export const ThemeProvider = ({ children }) => {
     setTheme,
     colors: validatedColors,
     isLoading,
+    error,
   };
 
   return (

@@ -1,17 +1,29 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
-import { useAuth } from '@clerk/clerk-expo';
+import { useFirebaseAuth } from '../hooks/useFirebaseAuth';
 import { useTheme } from '../theme/ThemeContext';
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
 import { useUserSync } from '../hooks/useUserSync';
 
 export function AuthGate({ children }) {
-  const { isLoaded, isSignedIn, user } = useAuth();
+  const { isLoaded, isSignedIn, user, loading } = useFirebaseAuth();
   const { syncUser } = useUserSync();
   const [showSignup, setShowSignup] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [authError, setAuthError] = useState(null);
   const { colors } = useTheme();
+
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 AuthGate Debug:', {
+      isLoaded,
+      isSignedIn,
+      user: !!user,
+      authError,
+      loading
+    });
+  }, [isLoaded, isSignedIn, user, authError, loading]);
 
   // Fallback colors in case theme context is not available
   const fallbackColors = {
@@ -27,9 +39,6 @@ export function AuthGate({ children }) {
     if (isLoaded && isSignedIn && user) {
       setSyncing(true);
       syncUser()
-        .then(() => {
-          // User synced successfully
-        })
         .catch((error) => {
           console.error('AuthGate: Sync failed:', error);
         })
@@ -39,14 +48,22 @@ export function AuthGate({ children }) {
     }
   }, [isLoaded, isSignedIn, user, syncUser]);
 
-  if (!isLoaded) {
+  // Show loading state while checking auth status
+  if (!isLoaded || loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: safeColors.background }}>
         <ActivityIndicator size="large" color={safeColors.primary} />
+        <Text style={{ marginTop: 10, color: safeColors.text }}>Loading authentication...</Text>
+        {authError && (
+          <Text style={{ marginTop: 10, color: safeColors.error, textAlign: 'center', paddingHorizontal: 20 }}>
+            {authError}
+          </Text>
+        )}
       </View>
     );
   }
 
+  // Show auth screens if not signed in
   if (!isSignedIn) {
     return showSignup ? (
       <SignupScreen switchToLogin={() => setShowSignup(false)} />
@@ -55,15 +72,16 @@ export function AuthGate({ children }) {
     );
   }
 
-  // Show loading while syncing
+  // Show loading state while syncing user data
   if (syncing) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: safeColors.background }}>
         <ActivityIndicator size="large" color={safeColors.primary} />
-        <Text style={{ marginTop: 16, color: safeColors.text }}>Syncing user data...</Text>
+        <Text style={{ marginTop: 10, color: safeColors.text }}>Syncing your data...</Text>
       </View>
     );
   }
 
+  // User is signed in and data is synced, show the app
   return children;
 }

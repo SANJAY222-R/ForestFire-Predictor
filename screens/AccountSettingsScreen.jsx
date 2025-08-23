@@ -12,14 +12,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useUser, useAuth } from '@clerk/clerk-expo';
 import { useTheme } from '../theme/ThemeContext';
 import { typography } from '../theme/typography';
+import { useAuth } from '../utils/auth';
 import { showSuccessToast, showErrorToast } from '../services/toastService';
 
 const AccountSettingsScreen = ({ navigation }) => {
   const { colors } = useTheme();
-  const { user, isLoaded } = useUser();
+  const { user, isLoaded } = useAuth();
   const { signOut } = useAuth();
   
   const [isEditing, setIsEditing] = useState(false);
